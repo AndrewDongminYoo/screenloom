@@ -23,6 +23,11 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
+> [!WARNING]
+> This baseline predates the 2026-08-13 code-review fixes and no longer describes the current tree.
+> `testDebugUnitTest`, `lintDebug`, `assembleDebug`, and `assembleDebugAndroidTest` pass, but no emulator was available, so `connectedDebugAndroidTest` and the manual flow have not been re-run.
+> The APK hash below is stale. Re-run the full gate and replace this section before any release.
+
 The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
 The automated result contained 17 passing unit tests and 29 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
