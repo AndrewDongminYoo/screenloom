@@ -24,10 +24,10 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 ## Verified Baseline
 
 The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
-The automated result contained 17 passing unit tests and 23 passing instrumented tests with zero failures, errors, or skips.
+The automated result contained 17 passing unit tests and 25 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The verified debug APK SHA-256 is `434551e7bced6b7b84ea15ca321b63e7979426bde7c3d836feb5a2e1fccd876b`.
+The verified debug APK SHA-256 is `3219b58f7e673a0fd9c988679e97b697098f23a419810cd6711e2ad6598eba27`.
 
 ## Manifest Privacy Boundary
 
@@ -60,8 +60,8 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 The 2026-08-12 API 34 smoke run completed all seven scenarios against the APK hash above.
 A clean install opened without a permission prompt; one-image and two-image imports worked through Photo Picker; `Split` changed from disabled to enabled with the second image; copy, palette, frame, shadow, and layout changes updated the preview; picker cancellation preserved the composition; and title, subtitle, images, and selected `Split` layout survived rotation while the process remained alive.
 
-The run exported `/sdcard/Download/launch-brightstore-ready-visuals.png`, which reopened as PNG with pixel width 1080 and pixel height 1920.
-That exported fixture had SHA-256 `e0beb55370a161c5d1c6530a0f47bc2b6a80fce0d98993a856c962c01a9950d1`.
+The run exported `/sdcard/Download/launch-bright (1).png`, which reopened as PNG with pixel width 1080 and pixel height 1920.
+That exported fixture had SHA-256 `41fca6bbd4414b027a758eba960218bc5eeeefa74d9b0e6eb50c8b7eba9594be`.
 
 ## Repository Quality Follow-Up
 

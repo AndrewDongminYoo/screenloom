@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -24,7 +25,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
+import kr.donminzzi.screenloom.editor.ShadowLevel
 import kotlin.math.abs
+import kotlin.math.roundToInt
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -85,6 +90,110 @@ class PosterPreviewTest {
             "Preview subtitle starts at $previewTop but export starts at $exportTop",
             abs(previewTop - exportTop) <= 8f,
         )
+    }
+
+    @Test
+    fun previewCopyIgnoresSystemFontScale() {
+        var fontScale by mutableStateOf(1f)
+        compose.setContent {
+            val deviceDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(deviceDensity.density, fontScale),
+            ) {
+                Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                    PosterPreview(
+                        document = EditorDocument(
+                            title = "Ship beautifully",
+                            subtitle = "Store-ready visuals in seconds.",
+                        ),
+                        images = emptyList(),
+                    )
+                }
+            }
+        }
+
+        val defaultScale = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle { fontScale = 2f }
+        val enlargedScale = compose.onNodeWithTag("preview-capture").captureToImage()
+
+        assertTrue("Preview copy changed with system font scale", imagesAreEqual(defaultScale, enlargedScale))
+    }
+
+    @Test
+    fun strongPreviewShadowExtendsBeyondScreenshotBounds() {
+        var images by mutableStateOf(emptyList<ImageBitmap>())
+        var shadow by mutableStateOf(ShadowLevel.Soft)
+        val source = Bitmap.createBitmap(320, 640, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.WHITE)
+        }
+        compose.setContent {
+            Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                PosterPreview(
+                    document = EditorDocument(shadow = shadow),
+                    images = images,
+                )
+            }
+        }
+
+        val background = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            images = listOf(source.asImageBitmap())
+        }
+        val softShadow = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle { shadow = ShadowLevel.Strong }
+        val strongShadow = compose.onNodeWithTag("preview-capture").captureToImage()
+        val scale = strongShadow.width / 1080f
+        val sampleX = (150f * scale).roundToInt()
+        val sampleY = (1000f * scale).roundToInt()
+
+        assertEquals(
+            background.toPixelMap()[sampleX, sampleY],
+            softShadow.toPixelMap()[sampleX, sampleY],
+        )
+        assertNotEquals(
+            background.toPixelMap()[sampleX, sampleY],
+            strongShadow.toPixelMap()[sampleX, sampleY],
+        )
+
+        val renderer = PosterRenderer()
+        val exportBackground = renderer.render(
+            EditorDocument(shadow = ShadowLevel.Strong),
+            emptyList(),
+            1080,
+            1920,
+        )
+        val exportSoftShadow = renderer.render(
+            EditorDocument(shadow = ShadowLevel.Soft),
+            listOf(source),
+            1080,
+            1920,
+        )
+        val exportStrongShadow = renderer.render(
+            EditorDocument(shadow = ShadowLevel.Strong),
+            listOf(source),
+            1080,
+            1920,
+        )
+        assertEquals(
+            exportBackground.getPixel(150, 1000),
+            exportSoftShadow.getPixel(150, 1000),
+        )
+        assertNotEquals(
+            exportBackground.getPixel(150, 1000),
+            exportStrongShadow.getPixel(150, 1000),
+        )
+    }
+
+    private fun imagesAreEqual(first: ImageBitmap, second: ImageBitmap): Boolean {
+        if (first.width != second.width || first.height != second.height) return false
+        val firstPixels = first.toPixelMap()
+        val secondPixels = second.toPixelMap()
+        for (y in 0 until first.height) {
+            for (x in 0 until first.width) {
+                if (firstPixels[x, y] != secondPixels[x, y]) return false
+            }
+        }
+        return true
     }
 
     private fun firstDifferentRow(baseline: ImageBitmap, changed: ImageBitmap): Int {

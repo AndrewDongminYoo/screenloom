@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Density
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
@@ -45,6 +48,7 @@ fun PosterPreview(
             .aspectRatio(9f / 16f)
             .clearAndSetSemantics { contentDescription = previewDescription },
     ) {
+        val posterDensity = Density(LocalDensity.current.density, fontScale = 1f)
         val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
         val topPadding = (maxWidth.value * 150f / 1080f).dp
         val titleSize = (maxWidth.value * 78f / 1080f).sp
@@ -94,36 +98,38 @@ fun PosterPreview(
                 drawPreviewImage(placement, image, document.frameEnabled, document.shadow)
             }
         }
-        Column(
-            modifier = Modifier.padding(
-                start = horizontalPadding,
-                top = topPadding,
-                end = horizontalPadding,
-            ),
-        ) {
-            if (document.title.isNotBlank()) {
-                Text(
-                    text = document.title,
-                    color = Color(0xFFF5F1E8),
-                    fontSize = titleSize,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = titleLineHeight,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (document.subtitle.isNotBlank()) {
-                Text(
-                    text = document.subtitle,
-                    modifier = Modifier.padding(
-                        top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
-                    ),
-                    color = Color.White.copy(alpha = 0.78f),
-                    fontSize = subtitleSize,
-                    lineHeight = subtitleLineHeight,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+        CompositionLocalProvider(LocalDensity provides posterDensity) {
+            Column(
+                modifier = Modifier.padding(
+                    start = horizontalPadding,
+                    top = topPadding,
+                    end = horizontalPadding,
+                ),
+            ) {
+                if (document.title.isNotBlank()) {
+                    Text(
+                        text = document.title,
+                        color = Color(0xFFF5F1E8),
+                        fontSize = titleSize,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = titleLineHeight,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (document.subtitle.isNotBlank()) {
+                    Text(
+                        text = document.subtitle,
+                        modifier = Modifier.padding(
+                            top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
+                        ),
+                        color = Color.White.copy(alpha = 0.78f),
+                        fontSize = subtitleSize,
+                        lineHeight = subtitleLineHeight,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -138,19 +144,20 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
     val topLeft = Offset(placement.left, placement.top)
     val targetSize = Size(placement.width, placement.height)
     val corner = size.width * (42f / 1080f)
-    val shadowOffset = size.height * (18f / 1920f)
-    val shadowAlpha = when (shadowLevel) {
-        ShadowLevel.Soft -> 0.18f
-        ShadowLevel.Medium -> 0.28f
-        ShadowLevel.Strong -> 0.4f
-    }
+    val shadowSpec = shadowLevel.posterShadowSpec(size.width / 1080f)
     rotate(placement.rotationDegrees, pivot = topLeft + Offset(targetSize.width / 2f, targetSize.height / 2f)) {
-        drawRoundRect(
-            color = Color.Black.copy(alpha = shadowAlpha),
-            topLeft = topLeft + Offset(0f, shadowOffset),
-            size = targetSize,
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner),
-        )
+        for (layerIndex in POSTER_SHADOW_LAYER_COUNT downTo 1) {
+            val expansion = shadowSpec.expansion(layerIndex)
+            drawRoundRect(
+                color = Color.Black.copy(alpha = shadowSpec.layerAlpha(layerIndex) / 255f),
+                topLeft = topLeft + Offset(-expansion, shadowSpec.offsetY - expansion),
+                size = Size(
+                    width = targetSize.width + expansion * 2f,
+                    height = targetSize.height + expansion * 2f,
+                ),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner + expansion),
+            )
+        }
         if (frameEnabled) {
             drawRoundRect(
                 color = Color(0xFF14171E),

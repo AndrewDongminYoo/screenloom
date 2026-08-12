@@ -26,6 +26,32 @@ data class PosterPalette(
     val accentColor: Int,
 )
 
+internal const val POSTER_SHADOW_LAYER_COUNT = 12
+
+internal data class PosterShadowSpec(
+    val radius: Float,
+    val offsetY: Float,
+    val alpha: Int = 150,
+) {
+    fun expansion(layerIndex: Int): Float = radius * layerIndex / POSTER_SHADOW_LAYER_COUNT
+
+    fun layerAlpha(layerIndex: Int): Int {
+        val distance = layerIndex.toFloat() / POSTER_SHADOW_LAYER_COUNT
+        return (alpha.toFloat() / POSTER_SHADOW_LAYER_COUNT * (1f - distance * 0.65f))
+            .roundToInt()
+            .coerceAtLeast(1)
+    }
+}
+
+internal fun ShadowLevel.posterShadowSpec(scale: Float): PosterShadowSpec = PosterShadowSpec(
+    radius = when (this) {
+        ShadowLevel.Soft -> 20f
+        ShadowLevel.Medium -> 34f
+        ShadowLevel.Strong -> 52f
+    } * scale,
+    offsetY = 18f * scale,
+)
+
 fun PaletteId.colors(): PosterPalette = when (this) {
     PaletteId.Ink -> PosterPalette(0xFF0B1020.toInt(), 0xFF243B6B.toInt(), 0xFFFFD166.toInt())
     PaletteId.Cobalt -> PosterPalette(0xFF101B4D.toInt(), 0xFF3457D5.toInt(), 0xFFFFF4E6.toInt())
@@ -185,18 +211,24 @@ class PosterRenderer {
             placement.top + placement.height,
         )
         val radius = 42f * scale
-        val shadowRadius = when (shadowLevel) {
-            ShadowLevel.Soft -> 20f
-            ShadowLevel.Medium -> 34f
-            ShadowLevel.Strong -> 52f
-        } * scale
         canvas.save()
         canvas.rotate(placement.rotationDegrees, bounds.centerX(), bounds.centerY())
-        val shadow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(130, 0, 0, 0)
-            setShadowLayer(shadowRadius, 0f, 18f * scale, Color.argb(150, 0, 0, 0))
+        val shadowSpec = shadowLevel.posterShadowSpec(scale)
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        for (layerIndex in POSTER_SHADOW_LAYER_COUNT downTo 1) {
+            val expansion = shadowSpec.expansion(layerIndex)
+            val shadowBounds = RectF(bounds).apply {
+                offset(0f, shadowSpec.offsetY)
+                inset(-expansion, -expansion)
+            }
+            shadowPaint.color = Color.argb(shadowSpec.layerAlpha(layerIndex), 0, 0, 0)
+            canvas.drawRoundRect(
+                shadowBounds,
+                radius + expansion,
+                radius + expansion,
+                shadowPaint,
+            )
         }
-        canvas.drawRoundRect(bounds, radius, radius, shadow)
 
         val inset = if (frameEnabled) 16f * scale else 0f
         if (frameEnabled) {
