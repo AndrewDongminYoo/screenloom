@@ -4,9 +4,11 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModelStore
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.media.ExportResult
 import kr.donminzzi.screenloom.media.ImageLoader
 import kr.donminzzi.screenloom.media.PosterWriter
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -54,7 +56,7 @@ class EditorViewModelTest {
         assertEquals("Keep this composition", state.document.title)
         assertSame(bitmap, state.images.single().bitmap)
         assertFalse(bitmap.isRecycled)
-        assertEquals("Unable to read that image", state.message)
+        assertEquals(R.string.import_failure, state.message)
     }
 
     @Test
@@ -67,9 +69,93 @@ class EditorViewModelTest {
         viewModel.awaitState { !it.isImporting && it.images.size == 1 }
 
         viewModel.export(Uri.parse("content://screenloom/output"))
-        val state = viewModel.awaitState { !it.isExporting && it.message == "PNG saved" }
+        val state = viewModel.awaitState { !it.isExporting && it.message != null }
 
-        assertEquals("PNG saved", state.message)
+        assertEquals(R.string.export_success, state.message)
+    }
+
+    @Test
+    fun emptyExportPublishesResourceBackedGuidance() {
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+        )
+
+        viewModel.export(Uri.parse("content://screenloom/output"))
+
+        assertEquals(R.string.empty_export, viewModel.state.value.message)
+    }
+
+    @Test
+    fun failedExportPublishesResourceBackedError() = runBlocking {
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+            writer = PosterWriter { _, _, _ -> ExportResult.Failure("ignored") },
+        )
+        viewModel.import(listOf(Uri.parse("content://screenloom/first")))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+
+        viewModel.export(Uri.parse("content://screenloom/output"))
+        val state = viewModel.awaitState { !it.isExporting && it.message != null }
+
+        assertEquals(R.string.export_failure, state.message)
+    }
+
+    @Test
+    fun importIsIgnoredWhileExportUsesTheActiveImages() = runBlocking {
+        val first = Uri.parse("content://screenloom/first")
+        val second = Uri.parse("content://screenloom/second")
+        val exportRelease = CompletableDeferred<Unit>()
+        var decodeCount = 0
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ ->
+                decodeCount += 1
+                Result.success(testBitmap())
+            },
+            writer = PosterWriter { _, _, _ ->
+                exportRelease.await()
+                ExportResult.Success
+            },
+        )
+        viewModel.import(listOf(first))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+        viewModel.export(Uri.parse("content://screenloom/output"))
+        viewModel.awaitState { it.isExporting }
+
+        viewModel.import(listOf(second))
+        delay(100)
+
+        assertEquals(1, decodeCount)
+        assertEquals(first, viewModel.state.value.images.single().uri)
+        assertTrue(viewModel.state.value.isExporting)
+        exportRelease.complete(Unit)
+        viewModel.awaitState { !it.isExporting }
+        Unit
+    }
+
+    @Test
+    fun repeatedExportRequestsStartOnlyOneWriter() = runBlocking {
+        val exportRelease = CompletableDeferred<Unit>()
+        var exportCount = 0
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+            writer = PosterWriter { _, _, _ ->
+                exportCount += 1
+                exportRelease.await()
+                ExportResult.Success
+            },
+        )
+        viewModel.import(listOf(Uri.parse("content://screenloom/first")))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+
+        viewModel.export(Uri.parse("content://screenloom/first-output"))
+        viewModel.export(Uri.parse("content://screenloom/second-output"))
+        viewModel.awaitState { it.isExporting }
+        delay(100)
+
+        assertEquals(1, exportCount)
+        exportRelease.complete(Unit)
+        viewModel.awaitState { !it.isExporting }
+        Unit
     }
 
     @Test

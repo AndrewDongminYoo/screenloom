@@ -65,9 +65,10 @@ fun EditorScreen(
     onMessageConsumed: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-    LaunchedEffect(state.message) {
-        state.message?.let { message ->
-            snackbarHostState.showSnackbar(message)
+    val message = state.message?.let { stringResource(it) }
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(it)
             onMessageConsumed()
         }
     }
@@ -189,6 +190,7 @@ private fun EditorWorkspace(
     onRequestExport: (String) -> Unit,
     onAction: (EditorAction) -> Unit,
 ) {
+    val editorEnabled = !state.isImporting && !state.isExporting
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -222,7 +224,7 @@ private fun EditorWorkspace(
         Spacer(Modifier.height(22.dp))
         EditorControls(
             document = state.document,
-            enabled = !state.isImporting,
+            enabled = editorEnabled,
             onAction = onAction,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -236,7 +238,7 @@ private fun EditorWorkspace(
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 52.dp),
-                enabled = !state.isImporting,
+                enabled = editorEnabled,
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(stringResource(R.string.replace))
@@ -246,7 +248,7 @@ private fun EditorWorkspace(
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = 52.dp),
-                enabled = !state.isImporting,
+                enabled = editorEnabled,
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Text(stringResource(R.string.reset))
@@ -258,7 +260,7 @@ private fun EditorWorkspace(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 58.dp),
-            enabled = !state.isExporting && !state.isImporting,
+            enabled = editorEnabled,
             shape = RoundedCornerShape(18.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
         ) {

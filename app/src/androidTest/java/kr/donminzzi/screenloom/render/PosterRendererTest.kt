@@ -3,7 +3,13 @@ package kr.donminzzi.screenloom.render
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.net.Uri
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.media.ExportResult
@@ -12,6 +18,7 @@ import kr.donminzzi.screenloom.media.PosterExporter
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -65,5 +72,48 @@ class PosterRendererTest {
         )
 
         assertEquals(ExportResult.Failure("Unable to save PNG"), result)
+    }
+
+    @Test
+    fun rendererEllipsizesLongTitlesLikeThePreview() {
+        val longTitle = "W".repeat(60)
+        val visibleTitle = ellipsizedText(longTitle, textSize = 78f)
+        val renderer = PosterRenderer()
+
+        val rendered = renderer.render(EditorDocument(title = longTitle), emptyList(), 1080, 1920)
+        val expected = renderer.render(EditorDocument(title = visibleTitle), emptyList(), 1080, 1920)
+
+        assertTrue(rendered.sameAs(expected))
+    }
+
+    @Test
+    fun rendererEllipsizesLongSubtitlesLikeThePreview() {
+        val longSubtitle = "W".repeat(100)
+        val visibleSubtitle = ellipsizedText(longSubtitle, textSize = 32f)
+        val renderer = PosterRenderer()
+
+        val rendered = renderer.render(EditorDocument(subtitle = longSubtitle), emptyList(), 1080, 1920)
+        val expected = renderer.render(EditorDocument(subtitle = visibleSubtitle), emptyList(), 1080, 1920)
+
+        assertTrue(rendered.sameAs(expected))
+    }
+
+    private fun ellipsizedText(text: String, textSize: Float): String {
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.textSize = textSize
+            typeface = Typeface.create(
+                Typeface.DEFAULT,
+                if (textSize == 78f) Typeface.BOLD else Typeface.NORMAL,
+            )
+        }
+        val layout = StaticLayout.Builder.obtain(text, 0, text.length, paint, 900)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setIncludePad(false)
+            .setMaxLines(2)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+        val lastLine = layout.lineCount - 1
+        val visibleEnd = layout.getLineStart(lastLine) + layout.getEllipsisStart(lastLine)
+        return text.take(visibleEnd) + "…"
     }
 }

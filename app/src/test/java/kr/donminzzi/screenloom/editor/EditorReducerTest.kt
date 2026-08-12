@@ -26,6 +26,24 @@ class EditorReducerTest {
     }
 
     @Test
+    fun titleClampPreservesACompleteEmojiAtTheLimit() {
+        val input = "T".repeat(59) + "🚀" + "overflow"
+
+        val result = EditorReducer.reduce(EditorDocument(), EditorAction.SetTitle(input))
+
+        assertEquals("T".repeat(59) + "🚀", result.title)
+    }
+
+    @Test
+    fun subtitleClampPreservesACompleteEmojiAtTheLimit() {
+        val input = "S".repeat(99) + "🚀" + "overflow"
+
+        val result = EditorReducer.reduce(EditorDocument(), EditorAction.SetSubtitle(input))
+
+        assertEquals("S".repeat(99) + "🚀", result.subtitle)
+    }
+
+    @Test
     fun removingSecondImageFallsBackFromSplitToFocus() {
         val split = EditorDocument(imageCount = 2, layout = LayoutMode.Split)
 

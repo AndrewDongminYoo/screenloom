@@ -12,6 +12,7 @@
     <string name="choose_screenshots">Choose screenshots</string>
     <string name="importing">Importing…</string>
     <string name="privacy_note">Offline by design. Your screenshots never leave this device.</string>
+    <string name="poster_preview_description">Promotional poster preview</string>
     <string name="tab_layout">Layout</string>
     <string name="tab_copy">Copy</string>
     <string name="tab_style">Style</string>
@@ -41,4 +42,8 @@
     <string name="reset">Reset</string>
     <string name="export_png">Export PNG</string>
     <string name="exporting">Exporting…</string>
+    <string name="import_failure">Unable to read that image</string>
+    <string name="empty_export">Choose a screenshot first</string>
+    <string name="export_success">PNG saved</string>
+    <string name="export_failure">Unable to save PNG</string>
 </resources>

@@ -143,6 +143,31 @@ private fun LayoutControls(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(18.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = stringResource(R.string.device_frame), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.device_frame_hint),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Switch(
+                    checked = document.frameEnabled,
+                    onCheckedChange = { onAction(EditorAction.SetFrameEnabled(it)) },
+                    enabled = enabled,
+                )
+            }
+        }
     }
 }
 
@@ -162,7 +187,7 @@ private fun CopyControls(
                 .testTag("title-field"),
             enabled = enabled,
             label = { Text(stringResource(R.string.title_label)) },
-            supportingText = { Text("${document.title.length}/60") },
+            supportingText = { Text("${document.title.codePointLength()}/60") },
             maxLines = 2,
             shape = RoundedCornerShape(16.dp),
         )
@@ -172,7 +197,7 @@ private fun CopyControls(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             label = { Text(stringResource(R.string.subtitle_label)) },
-            supportingText = { Text("${document.subtitle.length}/100") },
+            supportingText = { Text("${document.subtitle.codePointLength()}/100") },
             maxLines = 2,
             shape = RoundedCornerShape(16.dp),
         )
@@ -200,31 +225,6 @@ private fun StyleControls(
                         onClick = { onAction(EditorAction.SetPalette(palette)) },
                     )
                 }
-            }
-        }
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(18.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = stringResource(R.string.device_frame), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = stringResource(R.string.device_frame_hint),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-                Switch(
-                    checked = document.frameEnabled,
-                    onCheckedChange = { onAction(EditorAction.SetFrameEnabled(it)) },
-                    enabled = enabled,
-                )
             }
         }
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

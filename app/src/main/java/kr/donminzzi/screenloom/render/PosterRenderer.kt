@@ -13,6 +13,7 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.TextUtils
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.PaletteId
@@ -113,6 +114,7 @@ class PosterRenderer {
             ).setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setIncludePad(false)
                 .setMaxLines(2)
+                .setEllipsize(TextUtils.TruncateAt.END)
                 .build()
             canvas.save()
             canvas.translate(90f * scale, nextY)
@@ -136,6 +138,7 @@ class PosterRenderer {
             ).setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setIncludePad(false)
                 .setMaxLines(2)
+                .setEllipsize(TextUtils.TruncateAt.END)
                 .build()
             canvas.save()
             canvas.translate(90f * scale, nextY)

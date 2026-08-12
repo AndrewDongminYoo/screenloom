@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.ShadowLevel
@@ -37,6 +39,7 @@ fun PosterPreview(
     images: List<ImageBitmap>,
     modifier: Modifier = Modifier,
 ) {
+    val previewDescription = stringResource(R.string.poster_preview_description)
     BoxWithConstraints(
         modifier = modifier.aspectRatio(9f / 16f),
     ) {
@@ -50,7 +53,7 @@ fun PosterPreview(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .clearAndSetSemantics { contentDescription = "Promotional poster preview" },
+                .clearAndSetSemantics { contentDescription = previewDescription },
         ) {
             val palette = document.palette.colors()
             drawRect(

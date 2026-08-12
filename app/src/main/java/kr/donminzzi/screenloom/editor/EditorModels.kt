@@ -2,6 +2,7 @@ package kr.donminzzi.screenloom.editor
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.annotation.StringRes
 
 enum class LayoutMode {
     Focus,
@@ -47,7 +48,7 @@ data class EditorUiState(
     val images: List<ImportedImage> = emptyList(),
     val isImporting: Boolean = false,
     val isExporting: Boolean = false,
-    val message: String? = null,
+    @get:StringRes val message: Int? = null,
 )
 
 sealed interface EditorAction {

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.media.ExportResult
 import kr.donminzzi.screenloom.media.ImageLoader
 import kr.donminzzi.screenloom.media.PosterWriter
@@ -23,6 +24,7 @@ class EditorViewModel(
     fun import(uris: List<Uri>) {
         val selected = uris.take(MaxImages)
         if (selected.isEmpty()) return
+        if (mutableState.value.isExporting) return
 
         viewModelScope.launch {
             val previous = mutableState.value
@@ -34,7 +36,7 @@ class EditorViewModel(
             }
             val images = results.mapNotNull { result -> result.getOrNull() }
             if (images.isEmpty()) {
-                mutableState.value = previous.copy(message = ImportFailureMessage)
+                mutableState.value = previous.copy(message = R.string.import_failure)
                 return@launch
             }
 
@@ -45,7 +47,7 @@ class EditorViewModel(
                     EditorAction.SetImageCount(images.size),
                 ),
                 images = images,
-                message = ImportFailureMessage.takeIf { images.size < results.size },
+                message = R.string.import_failure.takeIf { images.size < results.size },
             )
         }
     }
@@ -59,13 +61,13 @@ class EditorViewModel(
     fun export(uri: Uri) {
         val current = mutableState.value
         if (current.images.isEmpty()) {
-            mutableState.update { state -> state.copy(message = EmptyExportMessage) }
+            mutableState.update { state -> state.copy(message = R.string.empty_export) }
             return
         }
         if (current.isExporting) return
 
+        mutableState.update { state -> state.copy(isExporting = true, message = null) }
         viewModelScope.launch {
-            mutableState.update { state -> state.copy(isExporting = true, message = null) }
             val result = posterWriter.export(
                 uri = uri,
                 document = current.document,
@@ -75,8 +77,8 @@ class EditorViewModel(
                 state.copy(
                     isExporting = false,
                     message = when (result) {
-                        ExportResult.Success -> ExportSuccessMessage
-                        is ExportResult.Failure -> result.reason
+                        ExportResult.Success -> R.string.export_success
+                        is ExportResult.Failure -> R.string.export_failure
                     },
                 )
             }
@@ -99,8 +101,5 @@ class EditorViewModel(
     private companion object {
         const val MaxImages = 2
         const val PreviewMaxDimension = 2048
-        const val ImportFailureMessage = "Unable to read that image"
-        const val EmptyExportMessage = "Choose a screenshot first"
-        const val ExportSuccessMessage = "PNG saved"
     }
 }
