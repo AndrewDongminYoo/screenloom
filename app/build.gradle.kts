@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    namespace = "io.github.andrewdongminyoo.screenloom"
+    namespace = "kr.donminzzi.screenloom"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "io.github.andrewdongminyoo.screenloom"
+        applicationId = "kr.donminzzi.screenloom"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

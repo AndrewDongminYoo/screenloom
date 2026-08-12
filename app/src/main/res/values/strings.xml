@@ -1,4 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Screenloom</string>
+    <string name="wordmark">SCREENLOOM</string>
+    <string name="sample_sequence">01 / POSTER</string>
+    <string name="one_frame_loaded">01 FRAME / 1080 × 1920</string>
+    <string name="two_frames_loaded">02 FRAMES / 1080 × 1920</string>
+    <string name="sample_poster_title">MAKE IT\nLOOK LAUNCHED.</string>
+    <string name="sample_poster_subtitle">From screenshot to storefront.</string>
+    <string name="empty_headline">Store-ready visuals,\nwoven in seconds.</string>
+    <string name="empty_body">Choose one or two screenshots. Screenloom turns them into a polished 9:16 promotional poster—right on your device.</string>
+    <string name="choose_screenshots">Choose screenshots</string>
+    <string name="importing">Importing…</string>
+    <string name="privacy_note">Offline by design. Your screenshots never leave this device.</string>
+    <string name="tab_layout">Layout</string>
+    <string name="tab_copy">Copy</string>
+    <string name="tab_style">Style</string>
+    <string name="layout_section_label">COMPOSITION</string>
+    <string name="layout_focus">Focus</string>
+    <string name="layout_stack">Stack</string>
+    <string name="layout_split">Split</string>
+    <string name="layout_hint">Focus spotlights one frame. Stack and Split make the second frame part of the story.</string>
+    <string name="split_unavailable">Add a second screenshot to use Split</string>
+    <string name="copy_section_label">POSTER COPY</string>
+    <string name="title_label">Title</string>
+    <string name="subtitle_label">Subtitle</string>
+    <string name="palette_section_label">COLOR LOOM</string>
+    <string name="palette_ink">Ink</string>
+    <string name="palette_cobalt">Cobalt</string>
+    <string name="palette_coral">Coral</string>
+    <string name="palette_moss">Moss</string>
+    <string name="palette_violet">Violet</string>
+    <string name="palette_sunrise">Sunrise</string>
+    <string name="device_frame">Device frame</string>
+    <string name="device_frame_hint">Add a quiet edge around each screenshot.</string>
+    <string name="shadow_section_label">DEPTH</string>
+    <string name="shadow_soft">Soft</string>
+    <string name="shadow_medium">Medium</string>
+    <string name="shadow_strong">Strong</string>
+    <string name="replace">Replace</string>
+    <string name="reset">Reset</string>
+    <string name="export_png">Export PNG</string>
+    <string name="exporting">Exporting…</string>
 </resources>

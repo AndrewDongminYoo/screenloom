@@ -14,7 +14,7 @@ Pure Kotlin models and layout math are separated from Android bitmap decoding, A
 ## Global Constraints
 
 - Repository root: `/Volumes/dongminyu/Development/01_personal/screenloom`.
-- Application ID and namespace: `io.github.andrewdongminyoo.screenloom`.
+- Application ID and namespace: `kr.donminzzi.screenloom`.
 - SDK configuration: `compileSdk = 36`, `targetSdk = 36`, `minSdk = 26`, Build Tools 36.0.0.
 - Local Android SDK: `/Volumes/dongminyu/Android/sdk`.
 - Local JDK: `/usr/bin/java`, OpenJDK 17.0.19.
@@ -63,32 +63,32 @@ Pure Kotlin models and layout math are separated from Android bitmap decoding, A
 - `app/src/main/res/values/strings.xml` contains all user-facing copy.
 - `app/src/main/res/values/themes.xml` supplies the launch theme.
 - `app/src/main/res/drawable/ic_launcher_foreground.xml` and `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` provide the Screenloom launcher icon.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/MainActivity.kt` owns picker launchers and service construction.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/ScreenloomApp.kt` binds the ViewModel state to the editor screen.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/ui/theme/ScreenloomTheme.kt` owns colors, type, shapes, and system-bar appearance.
+- `app/src/main/java/kr/donminzzi/screenloom/MainActivity.kt` owns picker launchers and service construction.
+- `app/src/main/java/kr/donminzzi/screenloom/ScreenloomApp.kt` binds the ViewModel state to the editor screen.
+- `app/src/main/java/kr/donminzzi/screenloom/ui/theme/ScreenloomTheme.kt` owns colors, type, shapes, and system-bar appearance.
 
 ### Editor
 
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorModels.kt` defines the immutable composition and editor state.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorReducer.kt` applies validated synchronous editor actions.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorViewModel.kt` coordinates import, editing, export, and one-shot messages.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorScreen.kt` renders the empty and populated editor states.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorControls.kt` contains layout, copy, style, reset, and export controls.
+- `app/src/main/java/kr/donminzzi/screenloom/editor/EditorModels.kt` defines the immutable composition and editor state.
+- `app/src/main/java/kr/donminzzi/screenloom/editor/EditorReducer.kt` applies validated synchronous editor actions.
+- `app/src/main/java/kr/donminzzi/screenloom/editor/EditorViewModel.kt` coordinates import, editing, export, and one-shot messages.
+- `app/src/main/java/kr/donminzzi/screenloom/editor/EditorScreen.kt` renders the empty and populated editor states.
+- `app/src/main/java/kr/donminzzi/screenloom/editor/EditorControls.kt` contains layout, copy, style, reset, and export controls.
 
 ### Rendering and Media
 
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterLayout.kt` calculates deterministic poster placements.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterPreview.kt` renders the scaled Compose preview from shared placements.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterRenderer.kt` renders the export bitmap with Android Canvas.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/media/ImageDecoder.kt` decodes bounded software bitmaps from selected URIs.
-- `app/src/main/java/io/github/andrewdongminyoo/screenloom/media/PosterExporter.kt` writes the rendered bitmap to the user-selected output URI.
+- `app/src/main/java/kr/donminzzi/screenloom/render/PosterLayout.kt` calculates deterministic poster placements.
+- `app/src/main/java/kr/donminzzi/screenloom/render/PosterPreview.kt` renders the scaled Compose preview from shared placements.
+- `app/src/main/java/kr/donminzzi/screenloom/render/PosterRenderer.kt` renders the export bitmap with Android Canvas.
+- `app/src/main/java/kr/donminzzi/screenloom/media/ImageDecoder.kt` decodes bounded software bitmaps from selected URIs.
+- `app/src/main/java/kr/donminzzi/screenloom/media/PosterExporter.kt` writes the rendered bitmap to the user-selected output URI.
 
 ### Tests
 
-- `app/src/test/java/io/github/andrewdongminyoo/screenloom/editor/EditorReducerTest.kt` covers normalization and state transitions.
-- `app/src/test/java/io/github/andrewdongminyoo/screenloom/render/PosterLayoutTest.kt` covers all layout geometry.
-- `app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/render/PosterRendererTest.kt` verifies bitmap dimensions and PNG encoding on Android.
-- `app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/editor/EditorScreenTest.kt` verifies empty, populated, disabled, editable, and accessible Compose states.
+- `app/src/test/java/kr/donminzzi/screenloom/editor/EditorReducerTest.kt` covers normalization and state transitions.
+- `app/src/test/java/kr/donminzzi/screenloom/render/PosterLayoutTest.kt` covers all layout geometry.
+- `app/src/androidTest/java/kr/donminzzi/screenloom/render/PosterRendererTest.kt` verifies bitmap dimensions and PNG encoding on Android.
+- `app/src/androidTest/java/kr/donminzzi/screenloom/editor/EditorScreenTest.kt` verifies empty, populated, disabled, editable, and accessible Compose states.
 
 ---
 
@@ -112,7 +112,7 @@ Pure Kotlin models and layout math are separated from Android bitmap decoding, A
 - Create: `app/src/main/AndroidManifest.xml`
 - Create: `app/src/main/res/values/strings.xml`
 - Create: `app/src/main/res/values/themes.xml`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/MainActivity.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/MainActivity.kt`
 - Include: `.agents/skills/testing-setup/**`
 - Include: `docs/plans/2026-08-12-screenloom-implementation.md`
 
@@ -205,12 +205,12 @@ plugins {
 }
 
 android {
-    namespace = "io.github.andrewdongminyoo.screenloom"
+    namespace = "kr.donminzzi.screenloom"
     compileSdk = 36
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
-        applicationId = "io.github.andrewdongminyoo.screenloom"
+        applicationId = "kr.donminzzi.screenloom"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
@@ -323,11 +323,11 @@ git commit -m "chore(android): bootstrap Screenloom app"
 
 **Files:**
 
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorModels.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorReducer.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterLayout.kt`
-- Create: `app/src/test/java/io/github/andrewdongminyoo/screenloom/editor/EditorReducerTest.kt`
-- Create: `app/src/test/java/io/github/andrewdongminyoo/screenloom/render/PosterLayoutTest.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorModels.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorReducer.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/render/PosterLayout.kt`
+- Create: `app/src/test/java/kr/donminzzi/screenloom/editor/EditorReducerTest.kt`
+- Create: `app/src/test/java/kr/donminzzi/screenloom/render/PosterLayoutTest.kt`
 
 **Interfaces:**
 
@@ -467,7 +467,7 @@ Expected: both commands pass.
 - [ ] **Step 6: Commit the domain**
 
 ```bash
-git add app/src/main/java/io/github/andrewdongminyoo/screenloom/editor app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterLayout.kt app/src/test
+git add app/src/main/java/kr/donminzzi/screenloom/editor app/src/main/java/kr/donminzzi/screenloom/render/PosterLayout.kt app/src/test
 git diff --cached --check
 git commit -m "feat(editor): add poster composition model"
 ```
@@ -476,10 +476,10 @@ git commit -m "feat(editor): add poster composition model"
 
 **Files:**
 
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterRenderer.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/render/PosterPreview.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/media/PosterExporter.kt`
-- Create: `app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/render/PosterRendererTest.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/render/PosterRenderer.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/render/PosterPreview.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/media/PosterExporter.kt`
+- Create: `app/src/androidTest/java/kr/donminzzi/screenloom/render/PosterRendererTest.kt`
 
 **Interfaces:**
 
@@ -535,7 +535,7 @@ class PosterRendererTest {
 Boot only `flutter_emulator`, wait for `sys.boot_completed` to equal `1`, then run:
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.andrewdongminyoo.screenloom.render.PosterRendererTest
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=kr.donminzzi.screenloom.render.PosterRendererTest
 ```
 
 Expected: compilation fails because the renderer and exporter do not exist.
@@ -584,7 +584,7 @@ sealed interface ExportResult {
 - [ ] **Step 6: Run renderer tests and native checks**
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.andrewdongminyoo.screenloom.render.PosterRendererTest
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=kr.donminzzi.screenloom.render.PosterRendererTest
 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest lintDebug
 ```
 
@@ -593,7 +593,7 @@ Expected: all commands pass and the renderer test decodes an exact 1080 by 1920 
 - [ ] **Step 7: Commit rendering**
 
 ```bash
-git add app/src/main/java/io/github/andrewdongminyoo/screenloom/media/PosterExporter.kt app/src/main/java/io/github/andrewdongminyoo/screenloom/render app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/render
+git add app/src/main/java/kr/donminzzi/screenloom/media/PosterExporter.kt app/src/main/java/kr/donminzzi/screenloom/render app/src/androidTest/java/kr/donminzzi/screenloom/render
 git diff --cached --check
 git commit -m "feat(render): export promotional posters"
 ```
@@ -602,10 +602,10 @@ git commit -m "feat(render): export promotional posters"
 
 **Files:**
 
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/media/ImageDecoder.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorViewModel.kt`
-- Modify: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorModels.kt`
-- Modify: `app/src/test/java/io/github/andrewdongminyoo/screenloom/editor/EditorReducerTest.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/media/ImageDecoder.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorViewModel.kt`
+- Modify: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorModels.kt`
+- Modify: `app/src/test/java/kr/donminzzi/screenloom/editor/EditorReducerTest.kt`
 
 **Interfaces:**
 
@@ -758,7 +758,7 @@ Expected: unit tests and lint pass.
 - [ ] **Step 6: Commit import and coordination**
 
 ```bash
-git add app/src/main/java/io/github/andrewdongminyoo/screenloom/editor app/src/main/java/io/github/andrewdongminyoo/screenloom/media/ImageDecoder.kt app/src/test
+git add app/src/main/java/kr/donminzzi/screenloom/editor app/src/main/java/kr/donminzzi/screenloom/media/ImageDecoder.kt app/src/test
 git diff --cached --check
 git commit -m "feat(editor): coordinate screenshot imports"
 ```
@@ -767,13 +767,13 @@ git commit -m "feat(editor): coordinate screenshot imports"
 
 **Files:**
 
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/ScreenloomApp.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/ui/theme/ScreenloomTheme.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorScreen.kt`
-- Create: `app/src/main/java/io/github/andrewdongminyoo/screenloom/editor/EditorControls.kt`
-- Modify: `app/src/main/java/io/github/andrewdongminyoo/screenloom/MainActivity.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/ScreenloomApp.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/ui/theme/ScreenloomTheme.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorScreen.kt`
+- Create: `app/src/main/java/kr/donminzzi/screenloom/editor/EditorControls.kt`
+- Modify: `app/src/main/java/kr/donminzzi/screenloom/MainActivity.kt`
 - Modify: `app/src/main/res/values/strings.xml`
-- Create: `app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/editor/EditorScreenTest.kt`
+- Create: `app/src/androidTest/java/kr/donminzzi/screenloom/editor/EditorScreenTest.kt`
 
 **Interfaces:**
 
@@ -836,7 +836,7 @@ class EditorScreenTest {
 - [ ] **Step 3: Run UI tests and verify the expected failure**
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.andrewdongminyoo.screenloom.editor.EditorScreenTest
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=kr.donminzzi.screenloom.editor.EditorScreenTest
 ```
 
 Expected: compilation fails because the screen and theme do not exist.
@@ -949,7 +949,7 @@ Picker cancellation must perform no ViewModel action.
 - [ ] **Step 7: Run UI tests, unit tests, lint, and assembly**
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.andrewdongminyoo.screenloom.editor.EditorScreenTest
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=kr.donminzzi.screenloom.editor.EditorScreenTest
 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest lintDebug assembleDebug
 ```
 
@@ -958,7 +958,7 @@ Expected: both commands pass.
 - [ ] **Step 8: Commit the complete editor flow**
 
 ```bash
-git add app/src/main/java/io/github/andrewdongminyoo/screenloom app/src/main/res/values app/src/androidTest/java/io/github/andrewdongminyoo/screenloom/editor
+git add app/src/main/java/kr/donminzzi/screenloom app/src/main/res/values app/src/androidTest/java/kr/donminzzi/screenloom/editor
 git diff --cached --check
 git commit -m "feat(ui): build Screenloom editor experience"
 ```
@@ -1042,8 +1042,8 @@ Install the exact built APK on `flutter_emulator`:
 
 ```bash
 /Volumes/dongminyu/Android/sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
-/Volumes/dongminyu/Android/sdk/platform-tools/adb shell am force-stop io.github.andrewdongminyoo.screenloom
-/Volumes/dongminyu/Android/sdk/platform-tools/adb shell monkey -p io.github.andrewdongminyoo.screenloom -c android.intent.category.LAUNCHER 1
+/Volumes/dongminyu/Android/sdk/platform-tools/adb shell am force-stop kr.donminzzi.screenloom
+/Volumes/dongminyu/Android/sdk/platform-tools/adb shell monkey -p kr.donminzzi.screenloom -c android.intent.category.LAUNCHER 1
 ```
 
 Verify these scenarios in order:
