@@ -18,11 +18,19 @@ sealed interface ExportResult {
     data class Failure(val reason: String) : ExportResult
 }
 
+fun interface PosterWriter {
+    suspend fun export(
+        uri: Uri,
+        document: EditorDocument,
+        images: List<Bitmap>,
+    ): ExportResult
+}
+
 class PosterExporter(
     private val renderer: PosterRenderer,
     private val outputStreamProvider: OutputStreamProvider,
-) {
-    suspend fun export(
+) : PosterWriter {
+    override suspend fun export(
         uri: Uri,
         document: EditorDocument,
         images: List<Bitmap>,

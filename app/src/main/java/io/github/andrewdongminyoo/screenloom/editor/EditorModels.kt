@@ -1,5 +1,8 @@
 package io.github.andrewdongminyoo.screenloom.editor
 
+import android.graphics.Bitmap
+import android.net.Uri
+
 enum class LayoutMode {
     Focus,
     Stack,
@@ -33,6 +36,19 @@ data class EditorDocument(
     val canUseSplit: Boolean
         get() = imageCount >= 2
 }
+
+data class ImportedImage(
+    val uri: Uri,
+    val bitmap: Bitmap,
+)
+
+data class EditorUiState(
+    val document: EditorDocument = EditorDocument(),
+    val images: List<ImportedImage> = emptyList(),
+    val isImporting: Boolean = false,
+    val isExporting: Boolean = false,
+    val message: String? = null,
+)
 
 sealed interface EditorAction {
     data class SetImageCount(val count: Int) : EditorAction

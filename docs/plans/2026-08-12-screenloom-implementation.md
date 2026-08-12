@@ -652,7 +652,7 @@ companion object {
     fun calculateInSampleSize(width: Int, height: Int, maxDimension: Int): Int {
         var sampleSize = 1
         var longestEdge = maxOf(width, height)
-        while (longestEdge / 2 >= maxDimension) {
+        while (longestEdge > maxDimension) {
             sampleSize *= 2
             longestEdge /= 2
         }
