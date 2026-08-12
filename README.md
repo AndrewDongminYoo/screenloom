@@ -35,7 +35,7 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidT
 
 See [docs/testing.md](docs/testing.md) for the complete testing contract.
 
-The last verified debug APK is `app/build/outputs/apk/debug/app-debug.apk` with SHA-256 `d984acaad064d44d135890e8e6c0965e771d6fa7276185c68997017e15dad605`.
+The last verified debug APK is `app/build/outputs/apk/debug/app-debug.apk` with SHA-256 `9eec1b460c69d755216c4e866da03a83559804a6a8822189a8b4a501c23026c5`.
 
 ## Commercial Scope
 

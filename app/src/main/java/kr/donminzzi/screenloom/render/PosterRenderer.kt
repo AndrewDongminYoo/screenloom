@@ -27,6 +27,7 @@ data class PosterPalette(
 )
 
 internal const val POSTER_SHADOW_LAYER_COUNT = 12
+internal const val POSTER_TITLE_LINE_HEIGHT = 86f
 
 internal data class PosterShadowSpec(
     val radius: Float,
@@ -139,6 +140,7 @@ class PosterRenderer {
                 (width - 180f * scale).roundToInt(),
             ).setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setIncludePad(false)
+                .setLineSpacing(POSTER_TITLE_LINE_HEIGHT * scale, 0f)
                 .setMaxLines(2)
                 .setEllipsize(TextUtils.TruncateAt.END)
                 .build()

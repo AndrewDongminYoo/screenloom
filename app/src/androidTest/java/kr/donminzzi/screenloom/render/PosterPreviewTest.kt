@@ -93,6 +93,72 @@ class PosterPreviewTest {
     }
 
     @Test
+    fun twoLineCopyMatchesTheExportVerticalPositions() {
+        var document by mutableStateOf(EditorDocument())
+        compose.setContent {
+            val deviceDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(deviceDensity.density, fontScale = 1f),
+            ) {
+                Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                    PosterPreview(document = document, images = emptyList())
+                }
+            }
+        }
+
+        val previewWithoutCopy = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            document = EditorDocument(title = "Launch better")
+        }
+        val previewWithOneLine = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            document = EditorDocument(title = "Launch better\nShare faster")
+        }
+        val previewWithTwoLines = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            document = document.copy(subtitle = "Store-ready visuals")
+        }
+        val previewWithSubtitle = compose.onNodeWithTag("preview-capture").captureToImage()
+        val previewScale = 1080f / previewWithTwoLines.width
+        val previewFirstLineTop = firstDifferentRow(previewWithoutCopy, previewWithOneLine) * previewScale
+        val previewSecondLineTop = firstDifferentRow(previewWithOneLine, previewWithTwoLines) * previewScale
+        val previewSubtitleTop = firstDifferentRow(previewWithTwoLines, previewWithSubtitle) * previewScale
+
+        val renderer = PosterRenderer()
+        val exportWithoutCopy = renderer.render(EditorDocument(), emptyList(), 1080, 1920)
+        val exportWithOneLine = renderer.render(
+            EditorDocument(title = "Launch better"),
+            emptyList(),
+            1080,
+            1920,
+        )
+        val exportWithTwoLines = renderer.render(
+            EditorDocument(title = "Launch better\nShare faster"),
+            emptyList(),
+            1080,
+            1920,
+        )
+        val exportWithSubtitle = renderer.render(document, emptyList(), 1080, 1920)
+        val exportFirstLineTop = firstDifferentRow(exportWithoutCopy, exportWithOneLine).toFloat()
+        val exportSecondLineTop = firstDifferentRow(exportWithOneLine, exportWithTwoLines).toFloat()
+        val exportSubtitleTop = firstDifferentRow(exportWithTwoLines, exportWithSubtitle).toFloat()
+        val previewLineSpacing = previewSecondLineTop - previewFirstLineTop
+        val exportLineSpacing = exportSecondLineTop - exportFirstLineTop
+        val previewSubtitleOffset = previewSubtitleTop - previewFirstLineTop
+        val exportSubtitleOffset = exportSubtitleTop - exportFirstLineTop
+
+        assertTrue(
+            "Preview line spacing is $previewLineSpacing but export spacing is $exportLineSpacing",
+            abs(previewLineSpacing - exportLineSpacing) <= 2f,
+        )
+        assertTrue(
+            "Preview rows are $previewFirstLineTop, $previewSecondLineTop, $previewSubtitleTop " +
+                "but export rows are $exportFirstLineTop, $exportSecondLineTop, $exportSubtitleTop",
+            abs(previewSubtitleOffset - exportSubtitleOffset) <= 3f,
+        )
+    }
+
+    @Test
     fun previewCopyIgnoresSystemFontScale() {
         var fontScale by mutableStateOf(1f)
         compose.setContent {

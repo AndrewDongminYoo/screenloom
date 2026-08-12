@@ -52,7 +52,7 @@ fun PosterPreview(
         val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
         val topPadding = (maxWidth.value * 150f / 1080f).dp
         val titleSize = (maxWidth.value * 78f / 1080f).sp
-        val titleLineHeight = (maxWidth.value * 86f / 1080f).sp
+        val titleLineHeight = (maxWidth.value * POSTER_TITLE_LINE_HEIGHT / 1080f).sp
         val subtitleSize = (maxWidth.value * 32f / 1080f).sp
         val subtitleLineHeight = (maxWidth.value * 42f / 1080f).sp
         val subtitleTopPadding = (maxWidth.value * 22f / 1080f).dp
