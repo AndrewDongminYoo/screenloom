@@ -3,7 +3,9 @@ package kr.donminzzi.screenloom.media
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -34,10 +36,29 @@ class ImageDecoder(
                 inSampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxDimension)
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-            contentResolver.openInputStream(uri)?.use { input ->
+            val decoded = contentResolver.openInputStream(uri)?.use { input ->
                 BitmapFactory.decodeStream(input, null, options)
             } ?: error("Unable to decode image")
+            decoded.rotated(readRotationDegrees(uri))
         }
+    }
+
+    // BitmapFactory ignores the EXIF orientation tag, so a camera photo picked through the
+    // photo picker would otherwise render sideways in both the preview and the export.
+    // Needs its own stream: content URI streams are not reliably re-seekable. Missing or
+    // unparsable EXIF degrades to 0 rather than failing the decode.
+    private fun readRotationDegrees(uri: Uri): Int = runCatching {
+        contentResolver.openInputStream(uri)?.use { input ->
+            ExifInterface(input).rotationDegrees
+        }
+    }.getOrNull() ?: 0
+
+    private fun Bitmap.rotated(degrees: Int): Bitmap {
+        if (degrees == 0) return this
+        val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
+        val rotated = Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+        if (rotated !== this) recycle()
+        return rotated
     }
 
     companion object {
