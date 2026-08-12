@@ -159,6 +159,53 @@ class PosterPreviewTest {
     }
 
     @Test
+    fun twoLineSubtitleMatchesTheExportLineSpacing() {
+        var document by mutableStateOf(EditorDocument())
+        compose.setContent {
+            val deviceDensity = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(deviceDensity.density, fontScale = 1f),
+            ) {
+                Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                    PosterPreview(document = document, images = emptyList())
+                }
+            }
+        }
+
+        val previewWithoutSubtitle = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            document = EditorDocument(subtitle = "Store-ready visuals")
+        }
+        val previewWithOneLine = compose.onNodeWithTag("preview-capture").captureToImage()
+        compose.runOnIdle {
+            document = EditorDocument(subtitle = "Store-ready visuals\nWithout the wait")
+        }
+        val previewWithTwoLines = compose.onNodeWithTag("preview-capture").captureToImage()
+        val previewScale = 1080f / previewWithTwoLines.width
+        val previewFirstLineTop = firstDifferentRow(previewWithoutSubtitle, previewWithOneLine) * previewScale
+        val previewSecondLineTop = firstDifferentRow(previewWithOneLine, previewWithTwoLines) * previewScale
+
+        val renderer = PosterRenderer()
+        val exportWithoutSubtitle = renderer.render(EditorDocument(), emptyList(), 1080, 1920)
+        val exportWithOneLine = renderer.render(
+            EditorDocument(subtitle = "Store-ready visuals"),
+            emptyList(),
+            1080,
+            1920,
+        )
+        val exportWithTwoLines = renderer.render(document, emptyList(), 1080, 1920)
+        val exportFirstLineTop = firstDifferentRow(exportWithoutSubtitle, exportWithOneLine).toFloat()
+        val exportSecondLineTop = firstDifferentRow(exportWithOneLine, exportWithTwoLines).toFloat()
+        val previewLineSpacing = previewSecondLineTop - previewFirstLineTop
+        val exportLineSpacing = exportSecondLineTop - exportFirstLineTop
+
+        assertTrue(
+            "Preview subtitle spacing is $previewLineSpacing but export spacing is $exportLineSpacing",
+            abs(previewLineSpacing - exportLineSpacing) <= 2f,
+        )
+    }
+
+    @Test
     fun previewCopyIgnoresSystemFontScale() {
         var fontScale by mutableStateOf(1f)
         compose.setContent {

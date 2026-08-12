@@ -24,10 +24,10 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 ## Verified Baseline
 
 The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
-The automated result contained 17 passing unit tests and 26 passing instrumented tests with zero failures, errors, or skips.
+The automated result contained 17 passing unit tests and 27 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The verified debug APK SHA-256 is `9eec1b460c69d755216c4e866da03a83559804a6a8822189a8b4a501c23026c5`.
+The verified debug APK SHA-256 is `7f97a62b6e5476f202ded8ea042be086b3343fefcb12668d3b718a7ddb2c4434`.
 
 ## Manifest Privacy Boundary
 
@@ -61,8 +61,8 @@ The 2026-08-12 API 34 smoke run completed all seven scenarios against the APK ha
 A clean install opened without a permission prompt; one-image and two-image imports worked through Photo Picker; `Split` changed from disabled to enabled with the second image; copy, palette, frame, shadow, and layout changes updated the preview; picker cancellation preserved the composition; and title, subtitle, images, and selected `Split` layout survived rotation while the process remained alive.
 Create Document cancellation also preserved the composition.
 
-The run exported `/sdcard/Download/launch-beautiful-stories-for-every-store.png`, which reopened as PNG with pixel width 1080 and pixel height 1920 and SHA-256 `a365e8c798aa8b5c4e659b06e7dcc3a22f95ac79edef4f270b2be32e2ba9deff`.
-That exported fixture had SHA-256 `41fca6bbd4414b027a758eba960218bc5eeeefa74d9b0e6eb50c8b7eba9594be`.
+The run exported `/sdcard/Download/subtitle-spacing-smoke.png` with a two-line subtitle.
+It reopened as PNG with pixel width 1080 and pixel height 1920 and SHA-256 `d0368cacdd23574dfadc84b28e43c2750d35fcae35df523225c1b8ed466a5f8e`.
 
 ## Repository Quality Follow-Up
 
