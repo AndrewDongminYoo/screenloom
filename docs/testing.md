@@ -27,7 +27,7 @@ The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulat
 The result contained 17 passing unit tests and 32 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The debug APK SHA-256 for that run is `d0cb505f014fc8284f5865be8a32c61ec462513167172880a7b0e93aab8d1460`.
+The debug APK SHA-256 for that run is `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91`.
 
 > [!WARNING]
 > The **manual emulator flow below has not been re-run since 2026-08-12**, so it does not cover the code-review fixes.

@@ -54,9 +54,11 @@ class PosterExporter(
         } catch (cancellation: CancellationException) {
             // Never report cancellation as a failure: the caller is being torn down.
             throw cancellation
-        } catch (_: Throwable) {
-            // Throwable rather than Exception so an OutOfMemoryError while allocating the
-            // 1080x1920 output surfaces as a recoverable snackbar instead of a crash.
+        } catch (_: OutOfMemoryError) {
+            // Allocating the 1080x1920 output alongside the resident previews is the one
+            // Error worth recovering from; every other VM-level failure stays fatal.
+            ExportResult.Failure(FailureMessage)
+        } catch (_: Exception) {
             ExportResult.Failure(FailureMessage)
         } finally {
             output?.takeUnless(Bitmap::isRecycled)?.recycle()
