@@ -9,7 +9,7 @@
 Pure Kotlin models and layout math are separated from Android bitmap decoding, Android Canvas export, and Compose preview code so geometry and editor behavior remain easy to test.
 `MainActivity` owns system picker contracts, `EditorViewModel` owns the active composition, and small manually constructed services handle decoding and export without dependency injection.
 
-**Tech Stack:** Kotlin with AGP built-in Kotlin 2.2.10, Kotlin Compose plugin 2.2.10, Jetpack Compose BOM 2026.06.00, Material 3, Activity Compose 1.13.0, Lifecycle 2.10.0, Android Gradle Plugin 9.3.0, Gradle 9.5.0, JDK 17, JUnit4, AndroidX Compose UI tests.
+**Tech Stack:** Kotlin with AGP built-in Kotlin 2.2.10, Kotlin Compose plugin 2.2.10, Jetpack Compose BOM 2026.06.00, Material 3, Activity Compose 1.13.0, Lifecycle 2.10.0, Android Gradle Plugin 9.3.0, Gradle 9.6.1, JDK 17, JUnit4, AndroidX Compose UI tests.
 
 ## Global Constraints
 
@@ -40,6 +40,7 @@ Pure Kotlin models and layout math are separated from Android bitmap decoding, A
 - Local `flutter_emulator` configuration reported an API 34 arm64 image and a 1080 by 1920 display.
 - [Android Gradle Plugin 9.3 release notes](https://developer.android.com/build/releases/agp-9-3-0-release-notes) require Gradle 9.5.0 and JDK 17 and list Build Tools 36.0.0 as the default.
 - [Android Gradle Plugin Maven metadata](https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/9.3.0/gradle-9.3.0.pom) records built-in Kotlin Gradle Plugin 2.2.10.
+- [Gradle 9.6.1 release notes](https://docs.gradle.org/9.6.1/release-notes.html) recommend upgrading to the 9.6.1 patch release.
 - [Compose setup documentation](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) records Compose BOM 2026.06.00 and the Kotlin-matched Compose compiler plugin requirement.
 - [Compose setup documentation](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) pairs Activity Compose 1.13.0 with Lifecycle ViewModel Compose 2.10.0 for the documented setup used here.
 
@@ -54,7 +55,7 @@ Pure Kotlin models and layout math are separated from Android bitmap decoding, A
 - `AGENTS.md` points contributors to the specification, plan, and testing document and records the project-specific verification gate.
 - `docs/testing.md` records the local unit, lint, build, instrumented, and manual smoke commands.
 - `settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`, and `gradle/libs.versions.toml` define the single-module Android build.
-- `gradlew`, `gradlew.bat`, and `gradle/wrapper/**` provide the reproducible Gradle 9.5.0 wrapper.
+- `gradlew`, `gradlew.bat`, and `gradle/wrapper/**` provide the reproducible Gradle 9.6.1 wrapper.
 - `app/build.gradle.kts` configures the app module, SDK levels, Compose, dependencies, and tests.
 
 ### Application
@@ -251,18 +252,18 @@ dependencies {
 
 Do not apply `org.jetbrains.kotlin.android`; AGP 9.3 built-in Kotlin is enabled by default.
 
-- [ ] **Step 2: Generate the Gradle 9.5.0 wrapper**
+- [ ] **Step 2: Generate the Gradle 9.6.1 wrapper**
 
 Run a temporary verified Gradle distribution because no system `gradle` executable is installed:
 
 ```bash
 wrapper_tmp_dir=$(mktemp -d)
-curl -fL https://services.gradle.org/distributions/gradle-9.5.0-bin.zip -o "$wrapper_tmp_dir/gradle-9.5.0-bin.zip"
-unzip -q "$wrapper_tmp_dir/gradle-9.5.0-bin.zip" -d "$wrapper_tmp_dir"
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk "$wrapper_tmp_dir/gradle-9.5.0/bin/gradle" wrapper --gradle-version 9.5.0 --distribution-type bin
+curl -fL https://services.gradle.org/distributions/gradle-9.6.1-bin.zip -o "$wrapper_tmp_dir/gradle-9.6.1-bin.zip"
+unzip -q "$wrapper_tmp_dir/gradle-9.6.1-bin.zip" -d "$wrapper_tmp_dir"
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk "$wrapper_tmp_dir/gradle-9.6.1/bin/gradle" wrapper --gradle-version 9.6.1 --distribution-type bin
 ```
 
-Verify `gradle/wrapper/gradle-wrapper.properties` points to `gradle-9.5.0-bin.zip` and keep the generated wrapper scripts unchanged.
+Verify `gradle/wrapper/gradle-wrapper.properties` points to `gradle-9.6.1-bin.zip` and keep the generated wrapper scripts unchanged.
 
 - [ ] **Step 3: Add the smallest launchable Compose shell**
 
