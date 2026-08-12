@@ -25,6 +25,7 @@
     <string name="copy_section_label">POSTER COPY</string>
     <string name="title_label">Title</string>
     <string name="subtitle_label">Subtitle</string>
+    <string name="character_counter">%1$d/%2$d</string>
     <string name="palette_section_label">COLOR LOOM</string>
     <string name="palette_ink">Ink</string>
     <string name="palette_cobalt">Cobalt</string>

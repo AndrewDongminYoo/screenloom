@@ -24,10 +24,10 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 ## Verified Baseline
 
 The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
-The automated result contained 16 passing unit tests and 21 passing instrumented tests with zero failures, errors, or skips.
+The automated result contained 17 passing unit tests and 23 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The verified debug APK SHA-256 is `d984acaad064d44d135890e8e6c0965e771d6fa7276185c68997017e15dad605`.
+The verified debug APK SHA-256 is `434551e7bced6b7b84ea15ca321b63e7979426bde7c3d836feb5a2e1fccd876b`.
 
 ## Manifest Privacy Boundary
 

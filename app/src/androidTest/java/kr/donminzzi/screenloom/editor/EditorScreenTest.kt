@@ -140,7 +140,26 @@ class EditorScreenTest {
         }
 
         compose.onNodeWithText("Copy").performClick()
-        compose.onNodeWithText("60/60").assertIsDisplayed()
+        val characterCounter = compose.activity.getString(R.string.character_counter, 60, 60)
+        compose.onNodeWithText(characterCounter).assertIsDisplayed()
+    }
+
+    @Test
+    fun deviceFrameSwitchHasAnAccessibleLabel() {
+        compose.setContent {
+            ScreenloomTheme {
+                EditorScreen(
+                    state = oneImageState(),
+                    onChooseImages = {},
+                    onRequestExport = {},
+                    onAction = {},
+                    onMessageConsumed = {},
+                )
+            }
+        }
+
+        val deviceFrame = compose.activity.getString(R.string.device_frame)
+        compose.onNodeWithContentDescription(deviceFrame).assertIsDisplayed()
     }
 
     @Test

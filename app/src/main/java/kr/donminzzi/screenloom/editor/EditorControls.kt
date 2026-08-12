@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -115,6 +116,7 @@ private fun LayoutControls(
     enabled: Boolean,
     onAction: (EditorAction) -> Unit,
 ) {
+    val deviceFrameLabel = stringResource(R.string.device_frame)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel(R.string.layout_section_label)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,6 +166,7 @@ private fun LayoutControls(
                 Switch(
                     checked = document.frameEnabled,
                     onCheckedChange = { onAction(EditorAction.SetFrameEnabled(it)) },
+                    modifier = Modifier.semantics { contentDescription = deviceFrameLabel },
                     enabled = enabled,
                 )
             }
@@ -187,7 +190,9 @@ private fun CopyControls(
                 .testTag("title-field"),
             enabled = enabled,
             label = { Text(stringResource(R.string.title_label)) },
-            supportingText = { Text("${document.title.codePointLength()}/60") },
+            supportingText = {
+                Text(stringResource(R.string.character_counter, document.title.codePointLength(), 60))
+            },
             maxLines = 2,
             shape = RoundedCornerShape(16.dp),
         )
@@ -197,7 +202,9 @@ private fun CopyControls(
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             label = { Text(stringResource(R.string.subtitle_label)) },
-            supportingText = { Text("${document.subtitle.codePointLength()}/100") },
+            supportingText = {
+                Text(stringResource(R.string.character_counter, document.subtitle.codePointLength(), 100))
+            },
             maxLines = 2,
             shape = RoundedCornerShape(16.dp),
         )

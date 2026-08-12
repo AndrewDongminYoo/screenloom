@@ -16,4 +16,11 @@ class PosterFileNameTest {
     fun blankTitleUsesFallback() {
         assertEquals("screenloom-poster.png", posterFileName("  "))
     }
+
+    @Test
+    fun filenameLimitPreservesSupplementaryLetters() {
+        val title = "a".repeat(47) + "𐐷" + "overflow"
+
+        assertEquals("a".repeat(47) + "𐐷.png", posterFileName(title))
+    }
 }

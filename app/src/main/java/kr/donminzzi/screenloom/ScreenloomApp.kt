@@ -28,11 +28,16 @@ fun ScreenloomApp(
 }
 
 internal fun posterFileName(title: String): String {
-    val slug = Normalizer.normalize(title, Normalizer.Form.NFKC)
+    val normalizedSlug = Normalizer.normalize(title, Normalizer.Form.NFKC)
         .lowercase(Locale.ROOT)
         .replace(Regex("[^\\p{L}\\p{N}]+"), "-")
         .trim('-')
-        .take(48)
+    val endIndex = normalizedSlug.offsetByCodePoints(
+        0,
+        normalizedSlug.codePointCount(0, normalizedSlug.length).coerceAtMost(48),
+    )
+    val slug = normalizedSlug
+        .substring(0, endIndex)
         .trimEnd('-')
     return if (slug.isBlank()) "screenloom-poster.png" else "$slug.png"
 }

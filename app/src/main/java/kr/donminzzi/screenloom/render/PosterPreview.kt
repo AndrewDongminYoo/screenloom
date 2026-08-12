@@ -41,7 +41,9 @@ fun PosterPreview(
 ) {
     val previewDescription = stringResource(R.string.poster_preview_description)
     BoxWithConstraints(
-        modifier = modifier.aspectRatio(9f / 16f),
+        modifier = modifier
+            .aspectRatio(9f / 16f)
+            .clearAndSetSemantics { contentDescription = previewDescription },
     ) {
         val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
         val topPadding = (maxWidth.value * 150f / 1080f).dp
@@ -51,9 +53,7 @@ fun PosterPreview(
         val subtitleLineHeight = (maxWidth.value * 42f / 1080f).sp
         val subtitleTopPadding = (maxWidth.value * 22f / 1080f).dp
         Canvas(
-            modifier = Modifier
-                .fillMaxSize()
-                .clearAndSetSemantics { contentDescription = previewDescription },
+            modifier = Modifier.fillMaxSize(),
         ) {
             val palette = document.palette.colors()
             drawRect(
@@ -115,7 +115,9 @@ fun PosterPreview(
             if (document.subtitle.isNotBlank()) {
                 Text(
                     text = document.subtitle,
-                    modifier = Modifier.padding(top = subtitleTopPadding),
+                    modifier = Modifier.padding(
+                        top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
+                    ),
                     color = Color.White.copy(alpha = 0.78f),
                     fontSize = subtitleSize,
                     lineHeight = subtitleLineHeight,
