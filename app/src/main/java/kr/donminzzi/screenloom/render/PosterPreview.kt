@@ -68,14 +68,14 @@ fun PosterPreview(
                 )
             )
             drawCircle(
-                color = Color(palette.accentColor).copy(alpha = 0.12f),
+                color = Color(palette.accentColor).copy(alpha = POSTER_GLOW_ALPHA / 255f),
                 radius = size.width * 0.22f,
                 center = Offset(size.width * 0.82f, size.height * 0.18f),
             )
             repeat(9) { row ->
                 repeat(6) { column ->
                     drawCircle(
-                        color = Color.White.copy(alpha = 0.08f),
+                        color = Color.White.copy(alpha = POSTER_TEXTURE_ALPHA / 255f),
                         radius = size.width * 0.002f,
                         center = Offset(
                             x = size.width * ((82f + column * 184f + (row % 2) * 36f) / 1080f),
@@ -123,7 +123,7 @@ fun PosterPreview(
                         modifier = Modifier.padding(
                             top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
                         ),
-                        color = Color.White.copy(alpha = 0.78f),
+                        color = Color.White.copy(alpha = POSTER_SUBTITLE_ALPHA / 255f),
                         fontSize = subtitleSize,
                         lineHeight = subtitleLineHeight,
                         maxLines = 2,
