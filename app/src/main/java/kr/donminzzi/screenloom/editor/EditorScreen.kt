@@ -191,6 +191,10 @@ private fun EditorWorkspace(
     onAction: (EditorAction) -> Unit,
 ) {
     val editorEnabled = !state.isImporting && !state.isExporting
+    // Without this the wrappers are rebuilt on every keystroke, so PosterPreview can never skip.
+    val previewImages = remember(state.images) {
+        state.images.map { it.bitmap.asImageBitmap() }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -214,7 +218,7 @@ private fun EditorWorkspace(
         ) {
             PosterPreview(
                 document = state.document,
-                images = state.images.map { it.bitmap.asImageBitmap() },
+                images = previewImages,
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(24.dp))
