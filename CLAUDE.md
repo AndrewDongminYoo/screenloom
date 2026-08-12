@@ -63,8 +63,9 @@ Both scale every dimension from the same 1080x1920 reference, but they share onl
 - `PosterLayout.placements()` — screenshot rectangles and rotations for `Focus` / `Stack` / `Split`.
 - `PaletteId.colors()` — the six gradients.
 - `ShadowLevel.posterShadowSpec()`, `POSTER_SHADOW_LAYER_COUNT`, `POSTER_TITLE_LINE_HEIGHT`, `POSTER_SUBTITLE_LINE_HEIGHT`.
+- `POSTER_SUBTITLE_ALPHA`, `POSTER_GLOW_ALPHA`, `POSTER_TEXTURE_ALPHA` — declared 0-255; the preview divides by `255f`. Never hand-convert a new alpha, add a constant.
 
-Everything else is duplicated as literals in both files: the background gradient and accent glow, the 9x6 dot texture, the copy-block geometry (`90f` inset, `150f` top, `78f` title, `32f` subtitle, `22f` gap), the `42f` corner radius, the `16f` frame inset, the `Stack` image-order reversal, and `centerCrop`.
+Everything else is duplicated as literals in both files: the background gradient, the accent-glow and dot-grid geometry, the copy-block geometry (`90f` inset, `150f` top, `78f` title, `32f` subtitle, `22f` gap), the `42f` corner radius, the `16f` frame inset, the `Stack` image-order reversal, and `centerCrop`.
 
 **Any visual change must be made in both files or the export silently stops matching the preview.**
 Three separate fix commits already exist for exactly this drift: `7a13b0b` (preview vs export), `ca6d4c7` (multiline title spacing), `a5eaf8f` (subtitle line spacing).
