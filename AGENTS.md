@@ -4,6 +4,7 @@
 
 Follow the approved design in `docs/specs/2026-08-12-screenloom-design.md` and the active plan in `docs/plans/2026-08-12-screenloom-implementation.md`.
 Keep Screenloom a single-module, offline native Android application.
+Keep the application ID and namespace at `kr.donminzzi.screenloom` unless a migration is explicitly approved.
 Do not add accounts, networking, analytics, ads, billing, a database, dependency injection, or a navigation framework without an approved specification change.
 
 ## Implementation
@@ -12,6 +13,7 @@ Use Kotlin, Jetpack Compose, Material 3, immutable editor state, and explicit ma
 Keep pure editor and layout behavior separate from Android bitmap and URI code.
 Use string resources for user-facing copy.
 Do not add broad media-library permissions; import and export must remain system-picker driven.
+The only allowed merged `<uses-permission>` entry is the AndroidX Core signature-protected `${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`; any Android platform permission is a release blocker until explicitly approved.
 
 ## Verification
 

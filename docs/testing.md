@@ -19,7 +19,31 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
 ```
 
 Unit tests protect editor normalization and deterministic layout geometry.
-Instrumented tests protect Android bitmap export and Compose semantics.
+Instrumented tests protect Android image decoding, bitmap export, ViewModel coordination, and Compose semantics.
+
+## Verified Baseline
+
+The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
+The automated result contained 14 passing unit tests and 12 passing instrumented tests with zero failures, errors, or skips.
+`lintDebug` and `assembleDebug` both exited zero.
+
+The verified debug APK SHA-256 is `cb2791a21db3404550cc9fdb18119f005ad4b7c4036fcb0e682d93d56eb152e2`.
+
+## Manifest Privacy Boundary
+
+The merged manifest requests no Android platform, network, storage, camera, microphone, location, contacts, or advertising permissions.
+AndroidX Core 1.18.0 contributes only `kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, a signature-protected permission scoped to this application for compatibility on older Android versions.
+It produces no runtime permission prompt.
+
+Verify that exact allowlist after manifest merging:
+
+```bash
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
+merged_manifest=$(find app/build/intermediates/merged_manifests/debug -name AndroidManifest.xml -print -quit)
+test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
+rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
+if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit 1; fi
+```
 
 ## Manual Emulator Flow
 
@@ -30,6 +54,14 @@ Instrumented tests protect Android bitmap export and Compose semantics.
 5. Cancel import and export and confirm the active composition remains intact.
 6. Rotate the emulator and confirm the active composition survives while the process remains alive.
 7. Export a PNG, reopen it, and confirm its dimensions are 1080 by 1920 pixels.
+
+## Manual Smoke Result
+
+The 2026-08-12 API 34 smoke run completed all seven scenarios against the APK hash above.
+A clean install opened without a permission prompt; one-image and two-image imports worked through Photo Picker; `Split` changed from disabled to enabled with the second image; copy, palette, frame, shadow, and layout changes updated the preview; picker cancellation preserved the composition; and title, subtitle, images, and selected `Split` layout survived rotation while the process remained alive.
+
+The run exported `/sdcard/Download/launch-polished.png`, which reopened as PNG with pixel width 1080 and pixel height 1920.
+That exported fixture had SHA-256 `b6fa3d9e78018f1f368a9f9c8f6af74d4b30ef50438c44c073f59e184550b378`.
 
 ## Repository Quality Follow-Up
 

@@ -266,7 +266,8 @@ Verify `gradle/wrapper/gradle-wrapper.properties` points to `gradle-9.5.0-bin.zi
 
 - [ ] **Step 3: Add the smallest launchable Compose shell**
 
-Create a manifest with only the exported launcher Activity and no `<uses-permission>` entries.
+Create a manifest with only the exported launcher Activity and no application-declared `<uses-permission>` entries.
+The merged manifest may retain AndroidX Core's signature-protected `${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, which is required for its pre-Android 13 receiver compatibility behavior and does not create a runtime permission prompt.
 Create `MainActivity` with edge-to-edge Compose hosting:
 
 ```kotlin
@@ -1030,11 +1031,14 @@ Run:
 
 ```bash
 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
-rg -n '<uses-permission' app/build/intermediates/merged_manifests/debug/processDebugMainManifest/AndroidManifest.xml
+merged_manifest=$(find app/build/intermediates/merged_manifests/debug -name AndroidManifest.xml -print -quit)
+test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
+rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
+if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit 1; fi
 ```
 
-Expected: `rg` exits 1 because the merged manifest contains no `<uses-permission>` entries.
-Treat any match as a release blocker and trace the contributing manifest before continuing.
+Expected: the merged manifest contains exactly the AndroidX Core signature-protected application permission and no `android.*` platform permission.
+Treat any additional match as a release blocker and trace the contributing manifest before continuing.
 
 - [ ] **Step 4: Perform the manual emulator smoke flow**
 
