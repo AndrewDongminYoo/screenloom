@@ -24,10 +24,10 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 ## Verified Baseline
 
 The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, after the code-review fixes.
-The result contained 17 passing unit tests and 31 passing instrumented tests with zero failures, errors, or skips.
+The result contained 17 passing unit tests and 32 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The debug APK SHA-256 for that run is `9d573ea32d4873a7d60b0dcfc35d4eb114477e24e41b8cef6b7eb356b70f09d5`.
+The debug APK SHA-256 for that run is `d0cb505f014fc8284f5865be8a32c61ec462513167172880a7b0e93aab8d1460`.
 
 > [!WARNING]
 > The **manual emulator flow below has not been re-run since 2026-08-12**, so it does not cover the code-review fixes.

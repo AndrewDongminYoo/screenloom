@@ -39,26 +39,40 @@ class ImageDecoder(
             val decoded = contentResolver.openInputStream(uri)?.use { input ->
                 BitmapFactory.decodeStream(input, null, options)
             } ?: error("Unable to decode image")
-            decoded.rotated(readRotationDegrees(uri))
+            decoded.oriented(readExifTransform(uri))
         }
     }
 
     // BitmapFactory ignores the EXIF orientation tag, so a camera photo picked through the
-    // photo picker would otherwise render sideways in both the preview and the export.
-    // Needs its own stream: content URI streams are not reliably re-seekable. Missing or
-    // unparsable EXIF degrades to 0 rather than failing the decode.
-    private fun readRotationDegrees(uri: Uri): Int = runCatching {
+    // photo picker would otherwise render sideways or mirrored in both the preview and the
+    // export. Needs its own stream: content URI streams are not reliably re-seekable.
+    // Missing or unparsable EXIF degrades to the identity rather than failing the decode.
+    private fun readExifTransform(uri: Uri): ExifTransform = runCatching {
         contentResolver.openInputStream(uri)?.use { input ->
-            ExifInterface(input).rotationDegrees
+            ExifInterface(input).let { exif -> ExifTransform(exif.rotationDegrees, exif.isFlipped) }
         }
-    }.getOrNull() ?: 0
+    }.getOrNull() ?: ExifTransform()
 
-    private fun Bitmap.rotated(degrees: Int): Bitmap {
-        if (degrees == 0) return this
-        val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
-        val rotated = Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
-        if (rotated !== this) recycle()
-        return rotated
+    private fun Bitmap.oriented(transform: ExifTransform): Bitmap {
+        if (transform.isIdentity) return this
+        // rotationDegrees carries only the rotational component, so orientations 2, 4, 5 and 7
+        // also need the mirror. AndroidX decomposes them as "mirror first, then rotate", and
+        // postScale before postRotate reproduces that order.
+        val matrix = Matrix().apply {
+            if (transform.flipped) postScale(-1f, 1f)
+            postRotate(transform.rotationDegrees.toFloat())
+        }
+        val oriented = Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
+        if (oriented !== this) recycle()
+        return oriented
+    }
+
+    private data class ExifTransform(
+        val rotationDegrees: Int = 0,
+        val flipped: Boolean = false,
+    ) {
+        val isIdentity: Boolean
+            get() = rotationDegrees == 0 && !flipped
     }
 
     companion object {
