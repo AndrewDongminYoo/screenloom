@@ -5,6 +5,7 @@ import android.net.Uri
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.render.PosterRenderer
 import java.io.OutputStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,7 +51,12 @@ class PosterExporter(
                 }
                 ExportResult.Success
             }
-        } catch (_: Exception) {
+        } catch (cancellation: CancellationException) {
+            // Never report cancellation as a failure: the caller is being torn down.
+            throw cancellation
+        } catch (_: Throwable) {
+            // Throwable rather than Exception so an OutOfMemoryError while allocating the
+            // 1080x1920 output surfaces as a recoverable snackbar instead of a crash.
             ExportResult.Failure(FailureMessage)
         } finally {
             output?.takeUnless(Bitmap::isRecycled)?.recycle()
