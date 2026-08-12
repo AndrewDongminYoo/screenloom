@@ -23,16 +23,18 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
-> [!WARNING]
-> This baseline predates the 2026-08-13 code-review fixes and no longer describes the current tree.
-> `testDebugUnitTest`, `lintDebug`, `assembleDebug`, and `assembleDebugAndroidTest` pass, but no emulator was available, so `connectedDebugAndroidTest` and the manual flow have not been re-run.
-> The APK hash below is stale. Re-run the full gate and replace this section before any release.
-
-The MVP was last verified on 2026-08-12 against the API 34 `flutter_emulator` AVD at 1080 by 1920.
-The automated result contained 17 passing unit tests and 29 passing instrumented tests with zero failures, errors, or skips.
+The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, after the code-review fixes.
+The result contained 17 passing unit tests and 31 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero.
 
-The verified debug APK SHA-256 is `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
+The debug APK SHA-256 for that run is `9d573ea32d4873a7d60b0dcfc35d4eb114477e24e41b8cef6b7eb356b70f09d5`.
+
+> [!WARNING]
+> The **manual emulator flow below has not been re-run since 2026-08-12**, so it does not cover the code-review fixes.
+> Two of them are user-visible and land squarely in that flow: EXIF orientation now rotates camera photos on import, and the selected control tab survives rotation (step 6).
+> Re-run the seven scenarios before any release.
+
+The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
 ## Manifest Privacy Boundary
 
