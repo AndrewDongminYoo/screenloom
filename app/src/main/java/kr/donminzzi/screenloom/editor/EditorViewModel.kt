@@ -64,7 +64,7 @@ class EditorViewModel(
             mutableState.update { state -> state.copy(message = R.string.empty_export) }
             return
         }
-        if (current.isExporting) return
+        if (current.isImporting || current.isExporting) return
 
         mutableState.update { state -> state.copy(isExporting = true, message = null) }
         viewModelScope.launch {

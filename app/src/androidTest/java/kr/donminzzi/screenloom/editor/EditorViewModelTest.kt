@@ -133,6 +133,38 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun exportIsIgnoredWhileReplacementImportIsActive() = runBlocking {
+        val first = Uri.parse("content://screenloom/first")
+        val second = Uri.parse("content://screenloom/second")
+        val importRelease = CompletableDeferred<Unit>()
+        var exportCount = 0
+        val viewModel = editorViewModel(
+            loader = ImageLoader { uri, _ ->
+                if (uri == second) importRelease.await()
+                Result.success(testBitmap())
+            },
+            writer = PosterWriter { _, _, _ ->
+                exportCount += 1
+                ExportResult.Success
+            },
+        )
+        viewModel.import(listOf(first))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+
+        viewModel.import(listOf(second))
+        viewModel.awaitState { it.isImporting }
+        viewModel.export(Uri.parse("content://screenloom/output"))
+        delay(100)
+
+        assertEquals(0, exportCount)
+        assertTrue(viewModel.state.value.isImporting)
+        assertFalse(viewModel.state.value.isExporting)
+        importRelease.complete(Unit)
+        viewModel.awaitState { !it.isImporting && it.images.single().uri == second }
+        Unit
+    }
+
+    @Test
     fun repeatedExportRequestsStartOnlyOneWriter() = runBlocking {
         val exportRelease = CompletableDeferred<Unit>()
         var exportCount = 0
