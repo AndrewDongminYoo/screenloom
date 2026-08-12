@@ -18,10 +18,13 @@ import kr.donminzzi.screenloom.render.PosterRenderer
 
 class MainActivity : ComponentActivity() {
     private val editorViewModel: EditorViewModel by viewModels {
-        val imageLoader = ImageDecoder(contentResolver)
+        // The ViewModel outlives configuration changes, so it must not capture the Activity's
+        // ContentResolver: that would keep the first MainActivity reachable forever.
+        val resolver = applicationContext.contentResolver
+        val imageLoader = ImageDecoder(resolver)
         val posterWriter = PosterExporter(
             renderer = PosterRenderer(),
-            outputStreamProvider = OutputStreamProvider(contentResolver::openOutputStream),
+            outputStreamProvider = OutputStreamProvider(resolver::openOutputStream),
         )
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
