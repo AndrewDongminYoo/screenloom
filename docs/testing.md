@@ -29,11 +29,6 @@ The result contained 17 passing unit tests and 32 passing instrumented tests wit
 
 The debug APK SHA-256 for that run is `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91`.
 
-> [!WARNING]
-> The **manual emulator flow below has not been re-run since 2026-08-12**, so it does not cover the code-review fixes.
-> Two of them are user-visible and land squarely in that flow: EXIF orientation now rotates camera photos on import, and the selected control tab survives rotation (step 6).
-> Re-run the seven scenarios before any release.
-
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
 ## Manifest Privacy Boundary
@@ -64,7 +59,24 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 
 ## Manual Smoke Result
 
-The 2026-08-12 API 34 smoke run completed all seven scenarios against the APK hash above.
+### 2026-08-13, post code-review fixes
+
+All seven scenarios were re-run against APK SHA-256 `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91` on the API 34 `flutter_emulator` AVD, **driven through `adb` and `uiautomator` rather than by hand**.
+
+1. A clean install (`uninstall` then `install`) opened with zero runtime permissions in `dumpsys package` and no dialog from any package other than the app itself.
+2. One image: Photo Picker reported "This app can only access the photos you select"; `Focus` and `Stack` re-rendered the preview; the `Split` button's clickable node reported `enabled=false` and tapping it changed nothing.
+3. Selecting two images moved the header to `02 FRAMES` and `Split` to `enabled=true`.
+4. Frame toggle, title, subtitle, `Coral`, `Violet`, `Strong`, and `Soft` each changed the preview region's pixel hash.
+5. Backing out of both Photo Picker and Create Document returned the identical preview hash at a fixed scroll position.
+6. Rotating to landscape kept `02 FRAMES`, the composition, and the selected `Style` tab.
+7. `Export PNG` suggested `screenloom-ship-faster.png` from the typed title and wrote an 859,705-byte file that reopened as a PNG of exactly 1080 by 1920.
+
+What this run does **not** establish: it asserts that pixels changed, not that the result looks right.
+Visual quality, text legibility, and colour rendering still need a human pass before release.
+
+### 2026-08-12, original MVP
+
+The 2026-08-12 API 34 smoke run completed all seven scenarios against the earlier APK hash.
 A clean install opened without a permission prompt; one-image and two-image imports worked through Photo Picker; `Split` changed from disabled to enabled with the second image; copy, palette, frame, shadow, and layout changes updated the preview; picker cancellation preserved the composition; and title, subtitle, images, and selected `Split` layout survived rotation while the process remained alive.
 Create Document cancellation also preserved the composition.
 
