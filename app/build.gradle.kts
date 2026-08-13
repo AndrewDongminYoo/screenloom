@@ -47,3 +47,41 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 }
+
+val verifyDebugManifestPermissions = tasks.register("verifyDebugManifestPermissions") {
+    group = "verification"
+    description = "Verifies Screenloom's exact merged-manifest permission allowlist."
+    dependsOn("processDebugMainManifest")
+
+    doLast {
+        // Must be the directory processDebugMainManifest itself writes (singular
+        // "merged_manifest"). Reading the plural "merged_manifests" tree instead validates an
+        // artifact no declared dependency refreshes, so the check silently passes on a stale
+        // copy — verified by adding android.permission.INTERNET and watching it go green.
+        val manifestCandidates = layout.buildDirectory
+            .dir("intermediates/merged_manifest/debug")
+            .get()
+            .asFile
+            .walkTopDown()
+            .filter { candidate -> candidate.isFile && candidate.name == "AndroidManifest.xml" }
+            .toList()
+        check(manifestCandidates.size == 1) {
+            "Expected one debug merged manifest but found ${manifestCandidates.size}: $manifestCandidates"
+        }
+        val manifestFile = manifestCandidates.single()
+        val permissions = Regex("""<uses-permission\s+android:name="([^"]+)"""")
+            .findAll(manifestFile.readText())
+            .map { match -> match.groupValues[1] }
+            .toSet()
+        val allowedPermissions = setOf(
+            "kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        )
+        check(permissions == allowedPermissions) {
+            "Unexpected permissions $permissions in ${manifestFile.absolutePath}; expected $allowedPermissions"
+        }
+    }
+}
+
+tasks.matching { it.name == "lintDebug" }.configureEach {
+    dependsOn(verifyDebugManifestPermissions)
+}

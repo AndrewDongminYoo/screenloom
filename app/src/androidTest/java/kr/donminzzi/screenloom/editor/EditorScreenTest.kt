@@ -3,6 +3,9 @@ package kr.donminzzi.screenloom.editor
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -10,11 +13,13 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kr.donminzzi.screenloom.R
@@ -181,6 +186,63 @@ class EditorScreenTest {
         compose.onNodeWithText("Reset").assertIsNotEnabled()
     }
 
+    @Test
+    fun tabsAndCurrentChoicesExposeSelectedSemantics() {
+        var state by mutableStateOf(oneImageState())
+        val source = state.images.single().bitmap
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                    )
+                }
+            }
+
+            compose.onNodeWithText("Layout").assertSelected()
+            compose.onNodeWithText("Focus").assertSelected()
+            compose.onNodeWithText("Style").performClick().assertSelected()
+            compose.onNodeWithText("Ink").assertSelected()
+            compose.onNodeWithText("Medium").assertSelected()
+        } finally {
+            compose.runOnIdle { state = EditorUiState() }
+            source.recycle()
+        }
+    }
+
+    @Test
+    fun selectedStyleTabAndItsControlsSurviveStateRestoration() {
+        val restorationTester = StateRestorationTester(compose)
+        var state by mutableStateOf(oneImageState())
+        val source = state.images.single().bitmap
+        try {
+            restorationTester.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                    )
+                }
+            }
+            compose.onNodeWithText("Style").performClick().assertSelected()
+
+            restorationTester.emulateSavedInstanceStateRestore()
+
+            compose.onNodeWithText("Style").assertSelected()
+            compose.onNodeWithText("Ink").performScrollTo().assertIsDisplayed()
+        } finally {
+            compose.runOnIdle { state = EditorUiState() }
+            source.recycle()
+        }
+    }
+
     private fun oneImageState(
         document: EditorDocument = EditorDocument(imageCount = 1),
     ): EditorUiState {
@@ -190,4 +252,8 @@ class EditorScreenTest {
             images = listOf(ImportedImage(Uri.EMPTY, bitmap)),
         )
     }
+
+    private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertSelected() = assert(
+        SemanticsMatcher.expectValue(SemanticsProperties.Selected, true),
+    )
 }

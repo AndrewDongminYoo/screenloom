@@ -24,11 +24,11 @@ class EditorViewModel(
     fun import(uris: List<Uri>) {
         val selected = uris.take(MaxImages)
         if (selected.isEmpty()) return
-        if (mutableState.value.isExporting) return
+        val previous = mutableState.value
+        if (previous.isImporting || previous.isExporting) return
 
+        mutableState.value = previous.copy(isImporting = true, message = null)
         viewModelScope.launch {
-            val previous = mutableState.value
-            mutableState.update { current -> current.copy(isImporting = true, message = null) }
             val results = selected.map { uri ->
                 imageLoader.decode(uri, PreviewMaxDimension).map { bitmap ->
                     ImportedImage(uri, bitmap)
@@ -78,7 +78,7 @@ class EditorViewModel(
                     isExporting = false,
                     message = when (result) {
                         ExportResult.Success -> R.string.export_success
-                        is ExportResult.Failure -> R.string.export_failure
+                        is ExportResult.Failure -> result.messageRes
                     },
                 )
             }

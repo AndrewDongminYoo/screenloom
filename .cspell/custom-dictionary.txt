@@ -1,0 +1,24 @@
+# Custom Dictionary Words
+alnum
+androidx
+argb
+ARGB
+CDPATH
+Dfile
+dists
+Dorg
+dumpsys
+ellipsized
+Ellipsizes
+esac
+Jacoco
+jvmargs
+kotlinx
+ktlint
+msys
+MSYS
+rgba
+Robolectric
+sdcard
+uiautomator
+unshadowed

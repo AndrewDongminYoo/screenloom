@@ -15,7 +15,6 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import kr.donminzzi.screenloom.editor.EditorDocument
-import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import kotlin.math.roundToInt
@@ -191,18 +190,20 @@ class PosterRenderer {
         height: Int,
         scale: Float,
     ) {
-        val placements = PosterLayout.placements(
+        val imagePlacements = PosterLayout.imagePlacements(
             canvasSize = androidx.compose.ui.unit.IntSize(width, height),
             layout = document.layout,
-            imageCount = images.size,
+            imageAspectRatios = images.map { image -> image.width.toFloat() / image.height },
         )
-        val orderedImages = if (document.layout == LayoutMode.Stack && images.size >= 2) {
-            listOf(images[1], images[0])
-        } else {
-            images
-        }
-        placements.zip(orderedImages).forEach { (placement, bitmap) ->
-            drawScreenshot(canvas, placement, bitmap, document.frameEnabled, document.shadow, scale)
+        imagePlacements.forEach { imagePlacement ->
+            drawScreenshot(
+                canvas = canvas,
+                placement = imagePlacement.placement,
+                bitmap = images[imagePlacement.imageIndex],
+                frameEnabled = document.frameEnabled,
+                shadowLevel = document.shadow,
+                scale = scale,
+            )
         }
     }
 

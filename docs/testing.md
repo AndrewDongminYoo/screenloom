@@ -5,7 +5,32 @@
 - JDK 17.
 - Android SDK at `/Volumes/dongminyu/Android/sdk`.
 - Compile and target SDK 36.
-- Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920.
+- Instrumented test AVD `flutter_emulator_2`, API 34, 1080 by 1920, run headless (see below). `flutter_emulator` is the same image but is often in use by another project.
+
+## Emulator
+
+Instrumented runs use a dedicated low-memory headless AVD so they cannot contend with an emulator another project is already using.
+Booting a second instance of the same AVD is refused outright (`Running multiple emulators with the same AVD is an experimental feature`), and without `ANDROID_SERIAL` Gradle installs and runs on **every** attached device.
+
+```bash
+$ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator_2 \
+  -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim \
+  -no-snapshot-load -no-snapshot-save -memory 2048 -cores 2 -port 5556 &
+adb -s emulator-5556 wait-for-device
+ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
+```
+
+`-gpu swiftshader_indirect` is load-bearing, not decoration.
+Dropping it once left the instance stuck at `offline` for 16 minutes with a live qemu process; the same AVD booted in 30 seconds with the flag restored.
+`-no-snapshot-load` keeps a stale snapshot from being restored into that same state.
+
+`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator_2`.
+On a freshly booted AVD the system photo picker keeps its own index, so pushed images show as "No photos or videos" until the media provider is restarted:
+
+```bash
+adb -s emulator-5556 shell am force-stop com.google.android.providers.media.module
+adb -s emulator-5556 shell content call --uri content://media/external/images/media --method scan_volume
+```
 
 ## Automated Checks
 
@@ -23,11 +48,11 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, after the code-review fixes.
-The result contained 17 passing unit tests and 32 passing instrumented tests with zero failures, errors, or skips.
-`lintDebug` and `assembleDebug` both exited zero.
+The automated gate was last run on 2026-08-13 against the headless API 34 `flutter_emulator_2` AVD at 1080 by 1920, on the audit-remediation branch, after screenshot frames were made aspect-aware.
+The result contained 28 passing unit tests and 42 passing instrumented tests with zero failures, errors, or skips.
+`lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
 
-The debug APK SHA-256 for that run is `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91`.
+The debug APK SHA-256 for that run is `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
 
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
@@ -36,12 +61,20 @@ The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumente
 The merged manifest requests no Android platform, network, storage, camera, microphone, location, contacts, or advertising permissions.
 AndroidX Core 1.18.0 contributes only `kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, a signature-protected permission scoped to this application for compatibility on older Android versions.
 It produces no runtime permission prompt.
+`lintDebug` runs `verifyDebugManifestPermissions` and enforces this exact merged-manifest allowlist.
 
 Verify that exact allowlist after manifest merging:
 
 ```bash
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew verifyDebugManifestPermissions
+```
+
+Use the following standalone merged-manifest inspection when diagnosing the verifier.
+Read `intermediates/merged_manifest/debug`, the directory `processDebugMainManifest` writes — the similarly named plural `merged_manifests` tree belongs to `processDebugManifest` and goes stale when only the main manifest task runs:
+
+```bash
 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
-merged_manifest=$(find app/build/intermediates/merged_manifests/debug -name AndroidManifest.xml -print -quit)
+merged_manifest=$(find app/build/intermediates/merged_manifest/debug -name AndroidManifest.xml -print -quit)
 test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
 rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
 if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit 1; fi
@@ -60,6 +93,10 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 ## Manual Smoke Result
 
 ### 2026-08-13, post code-review fixes
+
+> [!WARNING]
+> This run predates the audit-remediation work and its APK is **not** the one in the baseline above.
+> Serialized imports and the animated preview placements landed afterwards and are user-visible, so the seven scenarios need another pass before release.
 
 All seven scenarios were re-run against APK SHA-256 `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91` on the API 34 `flutter_emulator` AVD, **driven through `adb` and `uiautomator` rather than by hand**.
 
@@ -83,6 +120,30 @@ Create Document cancellation also preserved the composition.
 The run exported `/sdcard/Download/review-safely.png`.
 It reopened as PNG with pixel width 1080 and pixel height 1920 and SHA-256 `9172afc05fb739fb5bc95aea22c8aeb8aaceea584e82009d4dae49d34b3c1d40`.
 
-## Repository Quality Follow-Up
+## Visual QA Evidence
 
-Run `$setup-trunk` only as a separately approved repository-quality task after the native Android MVP passes all gates.
+Captured 2026-08-13 against APK SHA-256 `1bf67850ad7fef5b6605c50a011279228599d96ce8b6eb4fbb104ce10fd49d96`, written to the gitignored `app/build/outputs/manual-qa/`: the empty state, the `Focus` / `Stack` / `Split` editor states with a real title and subtitle, and the poster exported from `Split`.
+
+Mechanically confirmed from those captures: all three tabs and the three composition options render, `Split` shows its selected outline, both screenshots appear in the two-image `Split` output, the title and subtitle are legible in preview and export alike, and the exported file reopens as a PNG of exactly 1080 by 1920.
+
+The crop finding from that pass was acted on: screenshot frames now take the source's aspect ratio, so nothing is cropped. Captures `06`–`09` show the result, rendered from synthetic 9:16 sources carrying a full-bleed border, corner markers, and a left-anchored block — all of which survive intact.
+
+`[PARTIAL]` — human visual review is still required. Typography, colour, spacing, and polish are not established by any of the above. Two things are worth a deliberate look:
+
+- The accent glow renders as a hard-edged flat disc rather than a glow, in both preview and export. It is the most prominent non-screenshot element on the poster.
+- Aspect-fitting shortens the `Split` frames from 1030 to 782 units tall for a 9:16 source, which leaves more empty space below them. The frames are correct; whether the composition should reclaim that space is a design call.
+
+## Repository Quality Gate
+
+Trunk was adopted on 2026-08-13, after the MVP passed its gates.
+`trunk fmt` and `trunk check` run on changed files as the pre-commit and pre-push gate; `trunk check --all` is clean across 50 files.
+
+```bash
+trunk check
+```
+
+- **ktlint is deliberately disabled**, not merely absent. Kotlin formatting is unchecked on purpose: ktlint 1.x rewrites 23 of the 26 Kotlin files, so adopting the official style is a standalone decision rather than a side effect of enabling linting.
+- **A stale trunk cache imitates two unrelated bugs.** During setup it produced a plugin source that "conflicted" with the CLI's bundled definitions (`Tool has both download and package defined`), linter pins stuck years behind, `trunk upgrade` insisting "already up to date", and markdownlint failing to run on a single file while passing on its neighbour. None of that was real: clearing the cache fixed all of it at once. Suspect the cache before theorising about trunk, and re-check any conclusion drawn while it was dirty.
+
+An unauthenticated `api.github.com` failure was also observed during setup and wrongly written up here as a property of this machine.
+It was transient — the endpoint answers normally now.

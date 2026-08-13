@@ -38,6 +38,34 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun overlappingImportRequestIsIgnoredWhileTheFirstDecodeIsActive() = runBlocking {
+        val first = Uri.parse("content://screenloom/first")
+        val second = Uri.parse("content://screenloom/second")
+        val decodeStarted = CompletableDeferred<Unit>()
+        val firstRelease = CompletableDeferred<Unit>()
+        val decodedUris = mutableListOf<Uri>()
+        val viewModel = editorViewModel(
+            loader = ImageLoader { uri, _ ->
+                decodedUris += uri
+                if (uri == first) {
+                    decodeStarted.complete(Unit)
+                    firstRelease.await()
+                }
+                Result.success(testBitmap())
+            },
+        )
+
+        viewModel.import(listOf(first))
+        decodeStarted.await()
+        viewModel.import(listOf(second))
+
+        assertEquals(listOf(first), decodedUris)
+        firstRelease.complete(Unit)
+        val state = viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+        assertEquals(first, state.images.single().uri)
+    }
+
+    @Test
     fun failedReplacementPreservesTheActiveComposition() = runBlocking {
         val first = Uri.parse("content://screenloom/first")
         val broken = Uri.parse("content://screenloom/broken")
@@ -89,7 +117,7 @@ class EditorViewModelTest {
     fun failedExportPublishesResourceBackedError() = runBlocking {
         val viewModel = editorViewModel(
             loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
-            writer = PosterWriter { _, _, _ -> ExportResult.Failure("ignored") },
+            writer = PosterWriter { _, _, _ -> ExportResult.Failure(R.string.import_failure) },
         )
         viewModel.import(listOf(Uri.parse("content://screenloom/first")))
         viewModel.awaitState { !it.isImporting && it.images.size == 1 }
@@ -97,7 +125,7 @@ class EditorViewModelTest {
         viewModel.export(Uri.parse("content://screenloom/output"))
         val state = viewModel.awaitState { !it.isExporting && it.message != null }
 
-        assertEquals(R.string.export_failure, state.message)
+        assertEquals(R.string.import_failure, state.message)
     }
 
     @Test
