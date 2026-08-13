@@ -193,7 +193,7 @@ class PosterRenderer {
         val imagePlacements = PosterLayout.imagePlacements(
             canvasSize = androidx.compose.ui.unit.IntSize(width, height),
             layout = document.layout,
-            imageCount = images.size,
+            imageAspectRatios = images.map { image -> image.width.toFloat() / image.height },
         )
         imagePlacements.forEach { imagePlacement ->
             drawScreenshot(

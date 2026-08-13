@@ -29,6 +29,7 @@ import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
+import androidx.compose.ui.unit.IntSize
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.junit.Assert.assertEquals
@@ -258,9 +259,19 @@ class PosterPreviewTest {
         val softShadow = compose.onNodeWithTag("preview-capture").captureToImage()
         compose.runOnIdle { shadow = ShadowLevel.Strong }
         val strongShadow = compose.onNodeWithTag("preview-capture").captureToImage()
+        // Sample 40px outside the frame's left edge: past Soft's 20px spread, inside Strong's 52px.
+        // Derived from the placement because the frame now follows the source's aspect ratio, so a
+        // fixed coordinate stops straddling that boundary the moment the geometry changes.
+        val frame = PosterLayout.imagePlacements(
+            IntSize(1080, 1920),
+            LayoutMode.Focus,
+            listOf(320f / 640f),
+        ).single().placement
+        val exportSampleX = (frame.left - 40f).roundToInt()
+        val exportSampleY = (frame.top + frame.height / 2f).roundToInt()
         val scale = strongShadow.width / 1080f
-        val sampleX = (150f * scale).roundToInt()
-        val sampleY = (1000f * scale).roundToInt()
+        val sampleX = (exportSampleX * scale).roundToInt()
+        val sampleY = (exportSampleY * scale).roundToInt()
 
         assertEquals(
             background.toPixelMap()[sampleX, sampleY],
@@ -291,12 +302,12 @@ class PosterPreviewTest {
             1920,
         )
         assertEquals(
-            exportBackground.getPixel(150, 1000),
-            exportSoftShadow.getPixel(150, 1000),
+            exportBackground.getPixel(exportSampleX, exportSampleY),
+            exportSoftShadow.getPixel(exportSampleX, exportSampleY),
         )
         assertNotEquals(
-            exportBackground.getPixel(150, 1000),
-            exportStrongShadow.getPixel(150, 1000),
+            exportBackground.getPixel(exportSampleX, exportSampleY),
+            exportStrongShadow.getPixel(exportSampleX, exportSampleY),
         )
     }
 
@@ -549,15 +560,27 @@ class PosterPreviewTest {
         )
     }
 
+    /**
+     * The unshadowed Moss background at ([x], [y]).
+     *
+     * Derived rather than tabulated: the renderer's gradient runs from (0, 0) to (1080, 1920), so
+     * the interpolation factor is the point's projection onto that diagonal. The previous
+     * hard-coded triples silently encoded whatever shadow happened to fall on the sample, so
+     * moving a frame rebased the "background" expectation instead of failing honestly.
+     */
     private fun assertMossFixtureSample(color: Int, x: Int, y: Int) {
         val red = android.graphics.Color.red(color)
         val green = android.graphics.Color.green(color)
         val blue = android.graphics.Color.blue(color)
-        val (expectedRed, expectedGreen, expectedBlue) = when (x to y) {
-            108 to 192 -> Triple(22, 46, 38)
-            972 to 1728 -> Triple(61, 103, 79)
-            else -> error("No Moss fixture expectation for ($x, $y)")
+        val palette = PaletteId.Moss.colors()
+        val progress = (x * 1080f + y * 1920f) / (1080f * 1080f + 1920f * 1920f)
+        fun channel(component: (Int) -> Int): Int {
+            val from = component(palette.startColor)
+            return (from + progress * (component(palette.endColor) - from)).roundToInt()
         }
+        val expectedRed = channel(android.graphics.Color::red)
+        val expectedGreen = channel(android.graphics.Color::green)
+        val expectedBlue = channel(android.graphics.Color::blue)
         val tolerance = 4
         assertTrue(
             "Export sample ($x, $y) does not match the Moss fixture: " +

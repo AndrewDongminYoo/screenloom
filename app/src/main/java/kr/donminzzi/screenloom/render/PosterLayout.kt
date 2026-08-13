@@ -44,13 +44,24 @@ object PosterLayout {
         }
     }
 
+    /**
+     * Screenshot frames for [layout], one per entry in [imageAspectRatios] (width / height of the
+     * source, in that source's own pixels).
+     *
+     * Each frame is the largest rectangle with the source's aspect ratio that fits inside the
+     * template box, centred on it. The templates are fixed shapes, but imported screenshots are
+     * not: a 9:16 phone capture dropped into `Split`'s 440x1030 box used to lose 24% of its width
+     * to the centre crop, which reads as the app mangling the screenshot rather than presenting
+     * it. Fitting here keeps the whole screenshot visible for any source ratio, and leaves
+     * `centerCrop` in both renderers as a no-op safety net.
+     */
     fun imagePlacements(
         canvasSize: IntSize,
         layout: LayoutMode,
-        imageCount: Int,
+        imageAspectRatios: List<Float>,
     ): List<PosterImagePlacement> {
-        val placements = placements(canvasSize, layout, imageCount)
-        return if (layout == LayoutMode.Stack && placements.size >= 2) {
+        val placements = placements(canvasSize, layout, imageAspectRatios.size)
+        val ordered = if (layout == LayoutMode.Stack && placements.size >= 2) {
             listOf(
                 PosterImagePlacement(imageIndex = 1, placement = placements[0]),
                 PosterImagePlacement(imageIndex = 0, placement = placements[1]),
@@ -60,6 +71,26 @@ object PosterLayout {
                 PosterImagePlacement(imageIndex = index, placement = placement)
             }
         }
+        return ordered.map { entry ->
+            entry.copy(
+                placement = entry.placement.fittedTo(
+                    imageAspectRatios.getOrNull(entry.imageIndex) ?: 0f,
+                ),
+            )
+        }
+    }
+
+    private fun PosterPlacement.fittedTo(aspectRatio: Float): PosterPlacement {
+        if (aspectRatio <= 0f || width <= 0f || height <= 0f) return this
+        val boxRatio = width / height
+        val fittedWidth = if (aspectRatio > boxRatio) width else height * aspectRatio
+        val fittedHeight = if (aspectRatio > boxRatio) width / aspectRatio else height
+        return copy(
+            left = left + (width - fittedWidth) / 2f,
+            top = top + (height - fittedHeight) / 2f,
+            width = fittedWidth,
+            height = fittedHeight,
+        )
     }
 
     private val focusPlacement = PosterPlacement(

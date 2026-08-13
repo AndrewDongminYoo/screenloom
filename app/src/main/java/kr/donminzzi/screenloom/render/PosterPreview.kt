@@ -48,15 +48,18 @@ private const val PosterImageAlphaDurationMillis = 150
 private data class PosterPreviewTarget(
     val canvasSize: IntSize,
     val layout: LayoutMode,
-    val imageCount: Int,
+    val imageAspectRatios: List<Float>,
 ) {
-    private val imagePlacements = PosterLayout.imagePlacements(canvasSize, layout, imageCount)
+    private val imagePlacements = PosterLayout.imagePlacements(canvasSize, layout, imageAspectRatios)
 
     fun placementFor(imageIndex: Int): PosterPlacement = imagePlacements
         .firstOrNull { it.imageIndex == imageIndex }
         ?.placement
-        ?: PosterLayout.imagePlacements(canvasSize, LayoutMode.Focus, imageCount = 1)
-            .singleOrNull()
+        ?: PosterLayout.imagePlacements(
+            canvasSize,
+            LayoutMode.Focus,
+            imageAspectRatios.take(1),
+        ).singleOrNull()
             ?.placement
         ?: PosterPlacement(0f, 0f, 0f, 0f, 0f)
 
@@ -64,7 +67,7 @@ private data class PosterPreviewTarget(
 
     fun drawOrder(): List<Int> = buildList {
         addAll(imagePlacements.map { it.imageIndex })
-        addAll((0 until imageCount.coerceAtMost(2)).filterNot(::contains))
+        addAll((0 until imageAspectRatios.size.coerceAtMost(2)).filterNot(::contains))
     }
 }
 
@@ -91,7 +94,7 @@ fun PosterPreview(
             targetState = PosterPreviewTarget(
                 canvasSize = canvasSize,
                 layout = document.layout,
-                imageCount = images.size,
+                imageAspectRatios = images.map { image -> image.width.toFloat() / image.height },
             ),
             label = "poster placements",
         )

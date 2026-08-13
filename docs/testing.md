@@ -5,7 +5,27 @@
 - JDK 17.
 - Android SDK at `/Volumes/dongminyu/Android/sdk`.
 - Compile and target SDK 36.
-- Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920.
+- Instrumented test AVD `flutter_emulator_2`, API 34, 1080 by 1920, run headless (see below). `flutter_emulator` is the same image but is often in use by another project.
+
+## Emulator
+
+Instrumented runs use a dedicated low-memory headless AVD so they cannot contend with an emulator another project is already using.
+Booting a second instance of the same AVD is refused outright (`Running multiple emulators with the same AVD is an experimental feature`), and without `ANDROID_SERIAL` Gradle installs and runs on **every** attached device.
+
+```bash
+$ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator_2 \
+  -no-window -no-audio -no-boot-anim -no-snapshot-save -memory 2048 -port 5556 &
+adb -s emulator-5556 wait-for-device
+ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
+```
+
+`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator_2`.
+On a freshly booted AVD the system photo picker keeps its own index, so pushed images show as "No photos or videos" until the media provider is restarted:
+
+```bash
+adb -s emulator-5556 shell am force-stop com.google.android.providers.media.module
+adb -s emulator-5556 shell content call --uri content://media/external/images/media --method scan_volume
+```
 
 ## Automated Checks
 
@@ -23,11 +43,11 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, on the audit-remediation branch at `a5e4cbb`.
-The result contained 24 passing unit tests and 42 passing instrumented tests with zero failures, errors, or skips.
+The automated gate was last run on 2026-08-13 against the headless API 34 `flutter_emulator_2` AVD at 1080 by 1920, on the audit-remediation branch, after screenshot frames were made aspect-aware.
+The result contained 28 passing unit tests and 42 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
 
-The debug APK SHA-256 for that run is `1bf67850ad7fef5b6605c50a011279228599d96ce8b6eb4fbb104ce10fd49d96`.
+The debug APK SHA-256 for that run is `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
 
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
@@ -101,10 +121,12 @@ Captured 2026-08-13 against APK SHA-256 `1bf67850ad7fef5b6605c50a011279228599d96
 
 Mechanically confirmed from those captures: all three tabs and the three composition options render, `Split` shows its selected outline, both screenshots appear in the two-image `Split` output, the title and subtitle are legible in preview and export alike, and the exported file reopens as a PNG of exactly 1080 by 1920.
 
+The crop finding from that pass was acted on: screenshot frames now take the source's aspect ratio, so nothing is cropped. Captures `06`–`09` show the result, rendered from synthetic 9:16 sources carrying a full-bleed border, corner markers, and a left-anchored block — all of which survive intact.
+
 `[PARTIAL]` — human visual review is still required. Typography, colour, spacing, and polish are not established by any of the above. Two things are worth a deliberate look:
 
 - The accent glow renders as a hard-edged flat disc rather than a glow, in both preview and export. It is the most prominent non-screenshot element on the poster.
-- `centerCrop` trims a tall source to the narrower `Split` frame, which clips edge-anchored overlay text in the sample screenshots (`Score: 0` reads as `core: 0`). That is the documented behaviour of the crop, not a defect, but it decides how usable `Split` is for screenshots with left-aligned HUD.
+- Aspect-fitting shortens the `Split` frames from 1030 to 782 units tall for a 9:16 source, which leaves more empty space below them. The frames are correct; whether the composition should reclaim that space is a design call.
 
 ## Repository Quality Gate
 
