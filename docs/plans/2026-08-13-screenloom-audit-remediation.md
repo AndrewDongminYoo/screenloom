@@ -303,18 +303,21 @@ fun oversizedImageDecodesWithinTheRequestedLongestEdge() = runBlocking {
 }
 ```
 
-- [ ] **Step 2: Add a combined mirror-and-rotation EXIF test**
+- [ ] **Step 2: Add combined mirror-and-rotation EXIF tests**
 
-Create a 400 by 200 JPEG with a red left half and blue right half, write `ExifInterface.ORIENTATION_TRANSPOSE`, decode it, and assert the output is 200 by 400 with the blue region above the red region after the documented mirror-then-rotate transform.
+Create a 400 by 200 JPEG with a red left half and blue right half, then cover both composite orientations.
+AndroidX exposes them as a horizontal flip followed by `rotationDegrees`: `ORIENTATION_TRANSPOSE` produces red above blue, while `ORIENTATION_TRANSVERSE` produces blue above red.
 
 ```kotlin
 assertEquals(200, decoded.width)
 assertEquals(400, decoded.height)
 val top = decoded.getPixel(100, 20)
 val bottom = decoded.getPixel(100, 380)
-assertTrue(Color.blue(top) > Color.red(top))
-assertTrue(Color.red(bottom) > Color.blue(bottom))
+assertTrue(Color.red(top) > Color.blue(top))
+assertTrue(Color.blue(bottom) > Color.red(bottom))
 ```
+
+Repeat the decode with `ExifInterface.ORIENTATION_TRANSVERSE` and invert the two color expectations.
 
 - [ ] **Step 3: Run the decoder test class**
 
@@ -325,7 +328,7 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidT
 ```
 
 Expected: the command exits zero.
-If the composite orientation assertion fails, adjust only `ImageDecoder.oriented` to reproduce AndroidX's mirror-first then rotation transform and rerun until green.
+If either corrected composite orientation assertion fails, adjust only `ImageDecoder.oriented` to reproduce AndroidX's mirror-first then rotation transform and rerun until green.
 
 - [ ] **Step 4: Commit Task 3**
 
