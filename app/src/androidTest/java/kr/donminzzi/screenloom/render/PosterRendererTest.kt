@@ -17,6 +17,8 @@ import kr.donminzzi.screenloom.media.ExportResult
 import kr.donminzzi.screenloom.media.OutputStreamProvider
 import kr.donminzzi.screenloom.media.PosterExporter
 import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.io.OutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -74,6 +76,27 @@ class PosterRendererTest {
         )
 
         assertEquals(ExportResult.Failure(R.string.export_failure), result)
+    }
+
+    @Test
+    fun exporterReportsWriteFailure() = runBlocking {
+        val source = Bitmap.createBitmap(320, 640, Bitmap.Config.ARGB_8888)
+        try {
+            val exporter = PosterExporter(
+                PosterRenderer(),
+                OutputStreamProvider {
+                    object : OutputStream() {
+                        override fun write(value: Int) = throw IOException("disk full")
+                    }
+                },
+            )
+
+            val result = exporter.export(Uri.EMPTY, EditorDocument(imageCount = 1), listOf(source))
+
+            assertEquals(ExportResult.Failure(R.string.export_failure), result)
+        } finally {
+            source.recycle()
+        }
     }
 
     @Test

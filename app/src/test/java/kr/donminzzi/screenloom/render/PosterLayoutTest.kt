@@ -16,6 +16,14 @@ class PosterLayoutTest {
     }
 
     @Test
+    fun focusWithTwoImagesStillProducesTheSingleFocusPlacement() {
+        assertEquals(
+            listOf(PosterPlacement(190f, 580f, 700f, 1080f, 0f)),
+            PosterLayout.placements(output, LayoutMode.Focus, imageCount = 2),
+        )
+    }
+
+    @Test
     fun stackProducesTwoOpposingPlacements() {
         val result = PosterLayout.placements(output, LayoutMode.Stack, imageCount = 2)
 
@@ -29,9 +37,36 @@ class PosterLayoutTest {
     }
 
     @Test
+    fun stackWithOneImageUsesTheForegroundStackPlacement() {
+        assertEquals(
+            listOf(PosterPlacement(130f, 680f, 650f, 1010f, -6f)),
+            PosterLayout.placements(output, LayoutMode.Stack, imageCount = 1),
+        )
+    }
+
+    @Test
     fun splitNeverProducesMorePlacementsThanImages() {
         assertEquals(1, PosterLayout.placements(output, LayoutMode.Split, imageCount = 1).size)
         assertEquals(2, PosterLayout.placements(output, LayoutMode.Split, imageCount = 2).size)
+    }
+
+    @Test
+    fun splitWithOneImageFallsBackToFocusGeometry() {
+        assertEquals(
+            listOf(PosterPlacement(190f, 580f, 700f, 1080f, 0f)),
+            PosterLayout.placements(output, LayoutMode.Split, imageCount = 1),
+        )
+    }
+
+    @Test
+    fun splitWithTwoImagesUsesBothExactPlacements() {
+        assertEquals(
+            listOf(
+                PosterPlacement(75f, 600f, 440f, 1030f, -2f),
+                PosterPlacement(565f, 650f, 440f, 1030f, 2f),
+            ),
+            PosterLayout.placements(output, LayoutMode.Split, imageCount = 2),
+        )
     }
 
     @Test
