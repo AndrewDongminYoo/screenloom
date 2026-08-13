@@ -136,13 +136,14 @@ The crop finding from that pass was acted on: screenshot frames now take the sou
 ## Repository Quality Gate
 
 Trunk was adopted on 2026-08-13, after the MVP passed its gates.
-`trunk fmt` and `trunk check` run on changed files as the pre-commit and pre-push gate; `trunk check --all` is clean across 48 files.
+`trunk fmt` and `trunk check` run on changed files as the pre-commit and pre-push gate; `trunk check --all` is clean across 50 files.
 
 ```bash
 trunk check
 ```
 
-Two things about this repository's trunk setup are not obvious, and `.trunk/trunk.yaml` carries the full reasoning:
+- **ktlint is deliberately disabled**, not merely absent. Kotlin formatting is unchecked on purpose: ktlint 1.x rewrites 23 of the 26 Kotlin files, so adopting the official style is a standalone decision rather than a side effect of enabling linting.
+- **A stale trunk cache imitates two unrelated bugs.** During setup it produced a plugin source that "conflicted" with the CLI's bundled definitions (`Tool has both download and package defined`), linter pins stuck years behind, `trunk upgrade` insisting "already up to date", and markdownlint failing to run on a single file while passing on its neighbour. None of that was real: clearing the cache fixed all of it at once. Suspect the cache before theorising about trunk, and re-check any conclusion drawn while it was dirty.
 
-- **Linter and runtime versions are pinned by hand.** `trunk upgrade` answers "already up to date" even when a pin is years old, because it resolves versions through unauthenticated `api.github.com`, which this machine cannot reach. Do not read that answer as current. Adding a plugins source does not fix it and breaks config parsing.
-- **ktlint is deliberately not enabled.** Kotlin formatting is unchecked on purpose; adopting the official style is a standalone decision.
+An unauthenticated `api.github.com` failure was also observed during setup and wrongly written up here as a property of this machine.
+It was transient — the endpoint answers normally now.
