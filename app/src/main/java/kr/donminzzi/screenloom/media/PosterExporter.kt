@@ -2,6 +2,8 @@ package kr.donminzzi.screenloom.media
 
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.annotation.StringRes
+import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.render.PosterRenderer
 import java.io.OutputStream
@@ -16,7 +18,7 @@ fun interface OutputStreamProvider {
 sealed interface ExportResult {
     data object Success : ExportResult
 
-    data class Failure(val reason: String) : ExportResult
+    data class Failure(@StringRes val messageRes: Int) : ExportResult
 }
 
 fun interface PosterWriter {
@@ -42,10 +44,11 @@ class PosterExporter(
                 renderer.render(document, images, ExportWidth, ExportHeight)
             }
             withContext(Dispatchers.IO) {
-                val stream = outputStreamProvider.open(uri) ?: return@withContext ExportResult.Failure(FailureMessage)
+                val stream = outputStreamProvider.open(uri)
+                    ?: return@withContext ExportResult.Failure(R.string.export_failure)
                 stream.use { destination ->
                     if (!output.compress(Bitmap.CompressFormat.PNG, 100, destination)) {
-                        return@withContext ExportResult.Failure(FailureMessage)
+                        return@withContext ExportResult.Failure(R.string.export_failure)
                     }
                     destination.flush()
                 }
@@ -57,9 +60,9 @@ class PosterExporter(
         } catch (_: OutOfMemoryError) {
             // Allocating the 1080x1920 output alongside the resident previews is the one
             // Error worth recovering from; every other VM-level failure stays fatal.
-            ExportResult.Failure(FailureMessage)
+            ExportResult.Failure(R.string.export_failure)
         } catch (_: Exception) {
-            ExportResult.Failure(FailureMessage)
+            ExportResult.Failure(R.string.export_failure)
         } finally {
             output?.takeUnless(Bitmap::isRecycled)?.recycle()
         }
@@ -68,6 +71,5 @@ class PosterExporter(
     private companion object {
         const val ExportWidth = 1080
         const val ExportHeight = 1920
-        const val FailureMessage = "Unable to save PNG"
     }
 }

@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.media.ExportResult
 import kr.donminzzi.screenloom.media.OutputStreamProvider
@@ -72,7 +73,7 @@ class PosterRendererTest {
             images = listOf(source),
         )
 
-        assertEquals(ExportResult.Failure("Unable to save PNG"), result)
+        assertEquals(ExportResult.Failure(R.string.export_failure), result)
     }
 
     @Test
