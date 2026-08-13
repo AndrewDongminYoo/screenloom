@@ -1,5 +1,10 @@
 package kr.donminzzi.screenloom.render
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -9,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -36,6 +43,37 @@ import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import kotlin.math.roundToInt
 
+private const val PosterImageAlphaDurationMillis = 150
+
+private data class PosterPreviewTarget(
+    val canvasSize: IntSize,
+    val layout: LayoutMode,
+    val imageCount: Int,
+) {
+    private val imagePlacements = PosterLayout.imagePlacements(canvasSize, layout, imageCount)
+
+    fun placementFor(imageIndex: Int): PosterPlacement = imagePlacements
+        .firstOrNull { it.imageIndex == imageIndex }
+        ?.placement
+        ?: PosterLayout.imagePlacements(canvasSize, LayoutMode.Focus, imageCount = 1)
+            .singleOrNull()
+            ?.placement
+        ?: PosterPlacement(0f, 0f, 0f, 0f, 0f)
+
+    fun alphaFor(imageIndex: Int): Float = if (imagePlacements.any { it.imageIndex == imageIndex }) 1f else 0f
+
+    fun drawOrder(): List<Int> = buildList {
+        addAll(imagePlacements.map { it.imageIndex })
+        addAll((0 until imageCount.coerceAtMost(2)).filterNot(::contains))
+    }
+}
+
+private data class AnimatedPosterImage(
+    val imageIndex: Int,
+    val placement: PosterPlacement,
+    val alpha: Float,
+)
+
 @Composable
 fun PosterPreview(
     document: EditorDocument,
@@ -48,6 +86,74 @@ fun PosterPreview(
             .aspectRatio(9f / 16f)
             .clearAndSetSemantics { contentDescription = previewDescription },
     ) {
+        val canvasSize = IntSize(constraints.maxWidth, constraints.maxHeight)
+        val transition = updateTransition(
+            targetState = PosterPreviewTarget(
+                canvasSize = canvasSize,
+                layout = document.layout,
+                imageCount = images.size,
+            ),
+            label = "poster placements",
+        )
+        val animatedImages = (0 until images.size.coerceAtMost(2)).map { imageIndex ->
+            key(imageIndex) {
+                val left by transition.animateFloat(
+                    transitionSpec = {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    },
+                    label = "poster image $imageIndex left",
+                ) { target -> target.placementFor(imageIndex).left }
+                val top by transition.animateFloat(
+                    transitionSpec = {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    },
+                    label = "poster image $imageIndex top",
+                ) { target -> target.placementFor(imageIndex).top }
+                val width by transition.animateFloat(
+                    transitionSpec = {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    },
+                    label = "poster image $imageIndex width",
+                ) { target -> target.placementFor(imageIndex).width }
+                val height by transition.animateFloat(
+                    transitionSpec = {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    },
+                    label = "poster image $imageIndex height",
+                ) { target -> target.placementFor(imageIndex).height }
+                val rotationDegrees by transition.animateFloat(
+                    transitionSpec = {
+                        spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
+                    },
+                    label = "poster image $imageIndex rotation",
+                ) { target -> target.placementFor(imageIndex).rotationDegrees }
+                val alpha by transition.animateFloat(
+                    transitionSpec = { tween(durationMillis = PosterImageAlphaDurationMillis) },
+                    label = "poster image $imageIndex alpha",
+                ) { target -> target.alphaFor(imageIndex) }
+                AnimatedPosterImage(
+                    imageIndex = imageIndex,
+                    placement = PosterPlacement(left, top, width, height, rotationDegrees),
+                    alpha = alpha,
+                )
+            }
+        }
+        val animatedImagesByIndex = animatedImages.associateBy { it.imageIndex }
         val posterDensity = Density(LocalDensity.current.density, fontScale = 1f)
         val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
         val topPadding = (maxWidth.value * 150f / 1080f).dp
@@ -84,18 +190,15 @@ fun PosterPreview(
                     )
                 }
             }
-            val placements = PosterLayout.placements(
-                canvasSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
-                layout = document.layout,
-                imageCount = images.size,
-            )
-            val orderedImages = if (document.layout == LayoutMode.Stack && images.size >= 2) {
-                listOf(images[1], images[0])
-            } else {
-                images
-            }
-            placements.zip(orderedImages).forEach { (placement, image) ->
-                drawPreviewImage(placement, image, document.frameEnabled, document.shadow)
+            transition.targetState.drawOrder().forEach { imageIndex ->
+                val animatedImage = animatedImagesByIndex.getValue(imageIndex)
+                drawPreviewImage(
+                    placement = animatedImage.placement,
+                    image = images[imageIndex],
+                    frameEnabled = document.frameEnabled,
+                    shadowLevel = document.shadow,
+                    alpha = animatedImage.alpha,
+                )
             }
         }
         CompositionLocalProvider(LocalDensity provides posterDensity) {
@@ -140,7 +243,9 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
     image: ImageBitmap,
     frameEnabled: Boolean,
     shadowLevel: ShadowLevel,
+    alpha: Float,
 ) {
+    if (alpha <= 0f) return
     val topLeft = Offset(placement.left, placement.top)
     val targetSize = Size(placement.width, placement.height)
     val corner = size.width * (42f / 1080f)
@@ -149,7 +254,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
         for (layerIndex in POSTER_SHADOW_LAYER_COUNT downTo 1) {
             val expansion = shadowSpec.expansion(layerIndex)
             drawRoundRect(
-                color = Color.Black.copy(alpha = shadowSpec.layerAlpha(layerIndex) / 255f),
+                color = Color.Black.copy(alpha = shadowSpec.layerAlpha(layerIndex) / 255f * alpha),
                 topLeft = topLeft + Offset(-expansion, shadowSpec.offsetY - expansion),
                 size = Size(
                     width = targetSize.width + expansion * 2f,
@@ -160,7 +265,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
         }
         if (frameEnabled) {
             drawRoundRect(
-                color = Color(0xFF14171E),
+                color = Color(0xFF14171E).copy(alpha = alpha),
                 topLeft = topLeft,
                 size = targetSize,
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner),
@@ -189,6 +294,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
                 srcSize = source.second,
                 dstOffset = IntOffset(screen.left.roundToInt(), screen.top.roundToInt()),
                 dstSize = IntSize(screen.width.roundToInt(), screen.height.roundToInt()),
+                alpha = alpha,
             )
         }
     }

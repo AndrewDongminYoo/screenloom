@@ -11,6 +11,11 @@ data class PosterPlacement(
     val rotationDegrees: Float,
 )
 
+data class PosterImagePlacement(
+    val imageIndex: Int,
+    val placement: PosterPlacement,
+)
+
 object PosterLayout {
     private const val ExportWidth = 1080f
     private const val ExportHeight = 1920f
@@ -36,6 +41,24 @@ object PosterLayout {
                 width = placement.width * scaleX,
                 height = placement.height * scaleY,
             )
+        }
+    }
+
+    fun imagePlacements(
+        canvasSize: IntSize,
+        layout: LayoutMode,
+        imageCount: Int,
+    ): List<PosterImagePlacement> {
+        val placements = placements(canvasSize, layout, imageCount)
+        return if (layout == LayoutMode.Stack && placements.size >= 2) {
+            listOf(
+                PosterImagePlacement(imageIndex = 1, placement = placements[0]),
+                PosterImagePlacement(imageIndex = 0, placement = placements[1]),
+            )
+        } else {
+            placements.mapIndexed { index, placement ->
+                PosterImagePlacement(imageIndex = index, placement = placement)
+            }
         }
     }
 

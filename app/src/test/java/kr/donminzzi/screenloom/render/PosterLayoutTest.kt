@@ -79,4 +79,51 @@ class PosterLayoutTest {
 
         assertEquals(listOf(PosterPlacement(95f, 290f, 350f, 540f, 0f)), result)
     }
+
+    @Test
+    fun stackMapsOriginalSecondImageBehindOriginalFirstImage() {
+        assertEquals(
+            listOf(
+                PosterImagePlacement(
+                    imageIndex = 1,
+                    placement = PosterPlacement(330f, 620f, 620f, 980f, 6f),
+                ),
+                PosterImagePlacement(
+                    imageIndex = 0,
+                    placement = PosterPlacement(130f, 680f, 650f, 1010f, -6f),
+                ),
+            ),
+            PosterLayout.imagePlacements(output, LayoutMode.Stack, imageCount = 2),
+        )
+    }
+
+    @Test
+    fun splitPreservesOriginalImageOrder() {
+        assertEquals(
+            listOf(
+                PosterImagePlacement(
+                    imageIndex = 0,
+                    placement = PosterPlacement(75f, 600f, 440f, 1030f, -2f),
+                ),
+                PosterImagePlacement(
+                    imageIndex = 1,
+                    placement = PosterPlacement(565f, 650f, 440f, 1030f, 2f),
+                ),
+            ),
+            PosterLayout.imagePlacements(output, LayoutMode.Split, imageCount = 2),
+        )
+    }
+
+    @Test
+    fun focusExposesOnlyOriginalFirstImage() {
+        assertEquals(
+            listOf(
+                PosterImagePlacement(
+                    imageIndex = 0,
+                    placement = PosterPlacement(190f, 580f, 700f, 1080f, 0f),
+                ),
+            ),
+            PosterLayout.imagePlacements(output, LayoutMode.Focus, imageCount = 2),
+        )
+    }
 }

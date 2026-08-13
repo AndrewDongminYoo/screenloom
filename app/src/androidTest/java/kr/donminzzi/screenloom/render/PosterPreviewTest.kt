@@ -2,6 +2,7 @@ package kr.donminzzi.screenloom.render
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -25,6 +26,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
+import kr.donminzzi.screenloom.editor.LayoutMode
+import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -297,6 +300,149 @@ class PosterPreviewTest {
         )
     }
 
+    @Test
+    fun focusToStackShowsAnIntermediateSpringFrame() {
+        var document by mutableStateOf(EditorDocument(layout = LayoutMode.Focus))
+        val first = solidBitmap(android.graphics.Color.RED)
+        val second = solidBitmap(android.graphics.Color.GREEN)
+        var previewImages by mutableStateOf(listOf(first.asImageBitmap(), second.asImageBitmap()))
+        try {
+            compose.setContent {
+                Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                    PosterPreview(
+                        document = document,
+                        images = previewImages,
+                    )
+                }
+            }
+
+            compose.mainClock.autoAdvance = false
+            val focus = compose.onNodeWithTag("preview-capture").captureToImage()
+            compose.runOnIdle { document = document.copy(layout = LayoutMode.Stack) }
+            compose.mainClock.advanceTimeByFrame()
+            compose.mainClock.advanceTimeBy(32)
+            val intermediate = compose.onNodeWithTag("preview-capture").captureToImage()
+            compose.mainClock.advanceTimeBy(5_000)
+            val stack = compose.onNodeWithTag("preview-capture").captureToImage()
+
+            val focusRed = redDominantCentroid(focus)
+            val intermediateRed = redDominantCentroid(intermediate)
+            val stackRed = redDominantCentroid(stack)
+            assertCoordinateStrictlyBetween(
+                label = "red screenshot x",
+                start = focusRed.x,
+                intermediate = intermediateRed.x,
+                end = stackRed.x,
+                tolerance = 0.5f,
+            )
+            assertCoordinateStrictlyBetween(
+                label = "red screenshot y",
+                start = focusRed.y,
+                intermediate = intermediateRed.y,
+                end = stackRed.y,
+                tolerance = 0.5f,
+            )
+        } finally {
+            compose.mainClock.autoAdvance = true
+            compose.runOnIdle { previewImages = emptyList() }
+            first.recycle()
+            second.recycle()
+        }
+    }
+
+    @Test
+    fun constrainedCanvasResizeShowsAnIntermediateImagePosition() {
+        val source = solidBitmap(android.graphics.Color.RED)
+        var previewImages by mutableStateOf(listOf(source.asImageBitmap()))
+        var previewWidth by mutableStateOf(270.dp)
+        try {
+            compose.setContent {
+                Box(
+                    Modifier
+                        .width(300.dp)
+                        .height(540.dp)
+                        .testTag("preview-capture"),
+                ) {
+                    PosterPreview(
+                        document = EditorDocument(layout = LayoutMode.Focus),
+                        images = previewImages,
+                        modifier = Modifier.width(previewWidth),
+                    )
+                }
+            }
+
+            compose.mainClock.autoAdvance = false
+            val wide = compose.onNodeWithTag("preview-capture").captureToImage()
+            compose.runOnIdle { previewWidth = 210.dp }
+            compose.mainClock.advanceTimeByFrame()
+            compose.mainClock.advanceTimeBy(32)
+            val intermediate = compose.onNodeWithTag("preview-capture").captureToImage()
+            compose.mainClock.advanceTimeBy(5_000)
+            val narrow = compose.onNodeWithTag("preview-capture").captureToImage()
+
+            assertCoordinateStrictlyBetween(
+                label = "resized red screenshot x",
+                start = redDominantCentroid(wide).x,
+                intermediate = redDominantCentroid(intermediate).x,
+                end = redDominantCentroid(narrow).x,
+                tolerance = 0.5f,
+            )
+        } finally {
+            compose.mainClock.autoAdvance = true
+            compose.runOnIdle { previewImages = emptyList() }
+            source.recycle()
+        }
+    }
+
+    @Test
+    fun splitPreviewMatchesRepresentativeExportPixels() {
+        val document = EditorDocument(
+            imageCount = 2,
+            layout = LayoutMode.Split,
+            palette = PaletteId.Moss,
+            frameEnabled = false,
+            shadow = ShadowLevel.Strong,
+        )
+        val first = solidBitmap(android.graphics.Color.RED)
+        val second = solidBitmap(android.graphics.Color.GREEN)
+        var previewImages by mutableStateOf(listOf(first.asImageBitmap(), second.asImageBitmap()))
+        var export: Bitmap? = null
+        try {
+            compose.setContent {
+                Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                    PosterPreview(document = document, images = previewImages)
+                }
+            }
+
+            val preview = compose.onNodeWithTag("preview-capture").captureToImage()
+            val rendered = PosterRenderer().render(document, listOf(first, second), 1080, 1920)
+            export = rendered
+            assertRedDominant(rendered.getPixel(295, 1115), 295, 1115)
+            assertGreenDominant(rendered.getPixel(785, 1165), 785, 1165)
+            assertMossFixtureSample(rendered.getPixel(108, 192), 108, 192)
+            assertMossFixtureSample(rendered.getPixel(972, 1728), 972, 1728)
+            listOf(
+                295 to 1115,
+                785 to 1165,
+                108 to 192,
+                972 to 1728,
+            ).forEach { (exportX, exportY) ->
+                assertPixelChannelsWithinTolerance(
+                    preview = preview,
+                    export = rendered,
+                    exportX = exportX,
+                    exportY = exportY,
+                    tolerance = 8,
+                )
+            }
+        } finally {
+            compose.runOnIdle { previewImages = emptyList() }
+            export?.recycle()
+            first.recycle()
+            second.recycle()
+        }
+    }
+
     private fun imagesAreEqual(first: ImageBitmap, second: ImageBitmap): Boolean {
         if (first.width != second.width || first.height != second.height) return false
         val firstPixels = first.toPixelMap()
@@ -329,5 +475,130 @@ class PosterPreviewTest {
             if (baselinePixels[index] != changedPixels[index]) return index / changed.width
         }
         error("Bitmaps are identical")
+    }
+
+    private fun solidBitmap(color: Int): Bitmap = Bitmap.createBitmap(
+        320,
+        640,
+        Bitmap.Config.ARGB_8888,
+    ).apply {
+        eraseColor(color)
+    }
+
+    private data class PixelCentroid(
+        val x: Float,
+        val y: Float,
+    )
+
+    private fun redDominantCentroid(image: ImageBitmap): PixelCentroid {
+        val pixels = image.toPixelMap()
+        var xTotal = 0L
+        var yTotal = 0L
+        var count = 0L
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) {
+                val color = pixels[x, y]
+                if (
+                    color.red >= 0.75f &&
+                    color.red >= color.green + 0.45f &&
+                    color.red >= color.blue + 0.45f &&
+                    color.alpha >= 0.9f
+                ) {
+                    xTotal += x
+                    yTotal += y
+                    count += 1
+                }
+            }
+        }
+        check(count > 0) { "No red-dominant screenshot pixels found" }
+        return PixelCentroid(x = xTotal.toFloat() / count, y = yTotal.toFloat() / count)
+    }
+
+    private fun assertCoordinateStrictlyBetween(
+        label: String,
+        start: Float,
+        intermediate: Float,
+        end: Float,
+        tolerance: Float,
+    ) {
+        val lower = minOf(start, end) + tolerance
+        val upper = maxOf(start, end) - tolerance
+        assertTrue(
+            "$label did not interpolate: start=$start intermediate=$intermediate end=$end",
+            intermediate > lower && intermediate < upper,
+        )
+    }
+
+    private fun assertRedDominant(color: Int, x: Int, y: Int) {
+        val red = android.graphics.Color.red(color)
+        val green = android.graphics.Color.green(color)
+        val blue = android.graphics.Color.blue(color)
+        assertTrue(
+            "Export sample ($x, $y) is not meaningfully red: rgba=($red, $green, $blue, ${android.graphics.Color.alpha(color)})",
+            red >= 200 && red >= green + 120 && red >= blue + 120 && android.graphics.Color.alpha(color) >= 250,
+        )
+    }
+
+    private fun assertGreenDominant(color: Int, x: Int, y: Int) {
+        val red = android.graphics.Color.red(color)
+        val green = android.graphics.Color.green(color)
+        val blue = android.graphics.Color.blue(color)
+        assertTrue(
+            "Export sample ($x, $y) is not meaningfully green: rgba=($red, $green, $blue, ${android.graphics.Color.alpha(color)})",
+            green >= 200 && green >= red + 120 && green >= blue + 120 && android.graphics.Color.alpha(color) >= 250,
+        )
+    }
+
+    private fun assertMossFixtureSample(color: Int, x: Int, y: Int) {
+        val red = android.graphics.Color.red(color)
+        val green = android.graphics.Color.green(color)
+        val blue = android.graphics.Color.blue(color)
+        val (expectedRed, expectedGreen, expectedBlue) = when (x to y) {
+            108 to 192 -> Triple(22, 46, 38)
+            972 to 1728 -> Triple(61, 103, 79)
+            else -> error("No Moss fixture expectation for ($x, $y)")
+        }
+        val tolerance = 4
+        assertTrue(
+            "Export sample ($x, $y) does not match the Moss fixture: " +
+                "rgba=($red, $green, $blue, ${android.graphics.Color.alpha(color)})",
+            abs(red - expectedRed) <= tolerance &&
+                abs(green - expectedGreen) <= tolerance &&
+                abs(blue - expectedBlue) <= tolerance &&
+                android.graphics.Color.alpha(color) >= 250,
+        )
+    }
+
+    private fun assertPixelChannelsWithinTolerance(
+        preview: ImageBitmap,
+        export: Bitmap,
+        exportX: Int,
+        exportY: Int,
+        tolerance: Int,
+    ) {
+        val previewX = (exportX * preview.width / 1080f).roundToInt().coerceIn(0, preview.width - 1)
+        val previewY = (exportY * preview.height / 1920f).roundToInt().coerceIn(0, preview.height - 1)
+        val previewColor = preview.toPixelMap()[previewX, previewY]
+        val exportColor = export.getPixel(exportX, exportY)
+        val previewChannels = listOf(
+            (previewColor.red * 255).roundToInt(),
+            (previewColor.green * 255).roundToInt(),
+            (previewColor.blue * 255).roundToInt(),
+            (previewColor.alpha * 255).roundToInt(),
+        )
+        val exportChannels = listOf(
+            android.graphics.Color.red(exportColor),
+            android.graphics.Color.green(exportColor),
+            android.graphics.Color.blue(exportColor),
+            android.graphics.Color.alpha(exportColor),
+        )
+
+        previewChannels.zip(exportChannels).forEachIndexed { channelIndex, (previewChannel, exportChannel) ->
+            assertTrue(
+                "Pixel ($exportX, $exportY) channel $channelIndex differs: " +
+                    "preview=$previewChannel export=$exportChannel",
+                abs(previewChannel - exportChannel) <= tolerance,
+            )
+        }
     }
 }
