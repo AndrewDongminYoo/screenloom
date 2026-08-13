@@ -95,6 +95,17 @@ Create Document cancellation also preserved the composition.
 The run exported `/sdcard/Download/review-safely.png`.
 It reopened as PNG with pixel width 1080 and pixel height 1920 and SHA-256 `9172afc05fb739fb5bc95aea22c8aeb8aaceea584e82009d4dae49d34b3c1d40`.
 
+## Visual QA Evidence
+
+Captured 2026-08-13 against APK SHA-256 `1bf67850ad7fef5b6605c50a011279228599d96ce8b6eb4fbb104ce10fd49d96`, written to the gitignored `app/build/outputs/manual-qa/`: the empty state, the `Focus` / `Stack` / `Split` editor states with a real title and subtitle, and the poster exported from `Split`.
+
+Mechanically confirmed from those captures: all three tabs and the three composition options render, `Split` shows its selected outline, both screenshots appear in the two-image `Split` output, the title and subtitle are legible in preview and export alike, and the exported file reopens as a PNG of exactly 1080 by 1920.
+
+`[PARTIAL]` — human visual review is still required. Typography, colour, spacing, and polish are not established by any of the above. Two things are worth a deliberate look:
+
+- The accent glow renders as a hard-edged flat disc rather than a glow, in both preview and export. It is the most prominent non-screenshot element on the poster.
+- `centerCrop` trims a tall source to the narrower `Split` frame, which clips edge-anchored overlay text in the sample screenshots (`Score: 0` reads as `core: 0`). That is the documented behaviour of the crop, not a defect, but it decides how usable `Split` is for screenshots with left-aligned HUD.
+
 ## Repository Quality Gate
 
 Trunk was adopted on 2026-08-13, after the MVP passed its gates.
