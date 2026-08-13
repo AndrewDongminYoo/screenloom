@@ -2,7 +2,8 @@
 
 ## Scope
 
-Follow the approved design in `docs/specs/2026-08-12-screenloom-design.md` and the active plan in `docs/plans/2026-08-12-screenloom-implementation.md`.
+Follow the approved design in `docs/specs/2026-08-12-screenloom-design.md`.
+Both plans in `docs/plans/` are completed and merged; neither is active work.
 Keep Screenloom a single-module, offline native Android application.
 Keep the application ID and namespace at `kr.donminzzi.screenloom` unless a migration is explicitly approved.
 Do not add accounts, networking, analytics, ads, billing, a database, dependency injection, or a navigation framework without an approved specification change.
@@ -19,4 +20,5 @@ The only allowed merged `<uses-permission>` entry is the AndroidX Core signature
 
 Run the commands documented in `docs/testing.md`.
 The minimum completion gate is unit tests, Android lint, debug assembly, instrumented UI tests, and the manual emulator flow.
+`trunk check` is additionally enforced on commit and push, and `lintDebug` carries the merged-manifest permission check.
 Never claim Play publication, release signing, or pricing is complete from local app verification.
