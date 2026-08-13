@@ -36,12 +36,20 @@ The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumente
 The merged manifest requests no Android platform, network, storage, camera, microphone, location, contacts, or advertising permissions.
 AndroidX Core 1.18.0 contributes only `kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, a signature-protected permission scoped to this application for compatibility on older Android versions.
 It produces no runtime permission prompt.
+`lintDebug` runs `verifyDebugManifestPermissions` and enforces this exact merged-manifest allowlist.
 
 Verify that exact allowlist after manifest merging:
 
 ```bash
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew verifyDebugManifestPermissions
+```
+
+Use the following standalone merged-manifest inspection when diagnosing the verifier.
+Read `intermediates/merged_manifest/debug`, the directory `processDebugMainManifest` writes — the similarly named plural `merged_manifests` tree belongs to `processDebugManifest` and goes stale when only the main manifest task runs:
+
+```bash
 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
-merged_manifest=$(find app/build/intermediates/merged_manifests/debug -name AndroidManifest.xml -print -quit)
+merged_manifest=$(find app/build/intermediates/merged_manifest/debug -name AndroidManifest.xml -print -quit)
 test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
 rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
 if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit 1; fi
