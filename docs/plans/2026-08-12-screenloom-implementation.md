@@ -1,5 +1,9 @@
 # Screenloom Implementation Plan
 
+> [!NOTE]
+> **Completed and merged** as PR #1 (`b4f581f`), 2026-08-12. This is a historical record; there is no work outstanding here.
+> The step checkboxes were never ticked during execution and are left as written rather than back-filled, since no one verified them one by one after the fact.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 

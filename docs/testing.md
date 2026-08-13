@@ -128,10 +128,12 @@ Mechanically confirmed from those captures: all three tabs and the three composi
 
 The crop finding from that pass was acted on: screenshot frames now take the source's aspect ratio, so nothing is cropped. Captures `06`–`09` show the result, rendered from synthetic 9:16 sources carrying a full-bleed border, corner markers, and a left-anchored block — all of which survive intact.
 
-`[PARTIAL]` — human visual review is still required. Typography, colour, spacing, and polish are not established by any of the above. Two things are worth a deliberate look:
+**Human visual approval: given 2026-08-13**, by the operator, running the app rather than reading these captures. Both items flagged for a deliberate look were accepted as-is:
 
-- The accent glow renders as a hard-edged flat disc rather than a glow, in both preview and export. It is the most prominent non-screenshot element on the poster.
-- Aspect-fitting shortens the `Split` frames from 1030 to 782 units tall for a 9:16 source, which leaves more empty space below them. The frames are correct; whether the composition should reclaim that space is a design call.
+- The accent glow rendering as a hard-edged flat disc rather than a glow, in both preview and export.
+- Aspect-fitting shortening the `Split` frames from 1030 to 782 units tall for a 9:16 source, leaving more empty space below them.
+
+The sign-off was "no problems beyond the app being a little unattractive", which closes the correctness gate and leaves visual refinement as ordinary product work rather than a release blocker.
 
 ## Repository Quality Gate
 

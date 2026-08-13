@@ -1,5 +1,10 @@
 # Screenloom Audit Remediation Implementation Plan
 
+> [!NOTE]
+> **Completed and merged** as PR #3 (`b2e72a0`), 2026-08-13. All eight tasks are closed, including Task 8's human visual approval — see the sign-off in [../testing.md](../testing.md). This is a historical record; there is no work outstanding here.
+> Two things landed differently from the plan and are recorded where they belong rather than rewritten above: Task 5's verifier had to read `intermediates/merged_manifest/debug` rather than the plural path the plan gave, and a ninth change — fitting screenshot frames to the source aspect ratio — came out of the Task 8 review and is documented in `CLAUDE.md`.
+> The step checkboxes were never ticked during execution and are left as written rather than back-filled, since no one verified them one by one after the fact.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
 > Steps use checkbox (`- [ ]`) syntax for tracking.
 
