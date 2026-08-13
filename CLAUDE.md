@@ -41,7 +41,8 @@ ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest \
 
 `src/test` is **pure JVM only** — no Android framework types.
 That is why `ImageDecoderTest` covers only the static `calculateInSampleSize` and leaves decoding to `ImageDecoderInstrumentedTest`.
-Anything touching `Bitmap`, `Canvas`, `Uri`, or Compose goes in `src/androidTest` and runs on a real device.
+Anything touching `Bitmap`, `Canvas`, `Uri`, or the Compose runtime goes in `src/androidTest` and runs on a real device.
+Compose's pure-Kotlin value classes are not framework types and stay on the JVM side — `PosterLayoutTest` asserts geometry with `androidx.compose.ui.unit.IntSize` in `src/test`.
 
 There is no Robolectric and no mocking framework; test seams are hand-written fakes against the `fun interface` boundaries below.
 
@@ -61,11 +62,15 @@ Two independent renderers must produce the same poster:
 Both scale every dimension from the same 1080x1920 reference, but they share only:
 
 - `PosterLayout.placements()` — screenshot rectangles and rotations for `Focus` / `Stack` / `Split`.
+- `PosterLayout.imagePlacements()` — the same rectangles paired with the source image index, which is where the `Stack` back-to-front reversal now lives. Both renderers call this rather than reversing the list themselves.
 - `PaletteId.colors()` — the six gradients.
 - `ShadowLevel.posterShadowSpec()`, `POSTER_SHADOW_LAYER_COUNT`, `POSTER_TITLE_LINE_HEIGHT`, `POSTER_SUBTITLE_LINE_HEIGHT`.
 - `POSTER_SUBTITLE_ALPHA`, `POSTER_GLOW_ALPHA`, `POSTER_TEXTURE_ALPHA` — declared 0-255; the preview divides by `255f`. Never hand-convert a new alpha, add a constant.
 
-Everything else is duplicated as literals in both files: the background gradient, the accent-glow and dot-grid geometry, the copy-block geometry (`90f` inset, `150f` top, `78f` title, `32f` subtitle, `22f` gap), the `42f` corner radius, the `16f` frame inset, the `Stack` image-order reversal, and `centerCrop`.
+Everything else is duplicated as literals in both files: the background gradient, the accent-glow and dot-grid geometry, the copy-block geometry (`90f` inset, `150f` top, `78f` title, `32f` subtitle, `22f` gap), the `42f` corner radius, the `16f` frame inset, and `centerCrop`.
+
+The preview additionally animates placements through `updateTransition`; the export does not.
+That is deliberate, and it is only safe because every animation converges on the same `imagePlacements()` values — at rest the two renderers agree, which `PosterPreviewTest.splitPreviewMatchesRepresentativeExportPixels` pins.
 
 **Any visual change must be made in both files or the export silently stops matching the preview.**
 Three separate fix commits already exist for exactly this drift: `7a13b0b` (preview vs export), `ca6d4c7` (multiline title spacing), `a5eaf8f` (subtitle line spacing).
@@ -108,5 +113,6 @@ Sources are decoded with `inSampleSize` down to a 2048 px longest edge before an
 
 - Text limits are counted in **code points**, not chars — `takeCodePoints` in `EditorReducer` and the 48-point slug cap in `posterFileName` both use `offsetByCodePoints`, so emoji and surrogate pairs stay intact. Preserve that when touching either.
 - `EditorUiState.message` is a `@StringRes Int?`, so all user-facing copy goes to `app/src/main/res/values/strings.xml` — never inline a literal string in a composable.
-- Failures are recoverable snackbars that never clear the composition; `import` and `export` refuse to run while the other is in flight.
+- Failures are recoverable snackbars that never clear the composition; `import` and `export` each refuse to run while either is in flight, and both read the guard and set their flag synchronously before `viewModelScope.launch` so no second request can slip between the two.
+- `ExportResult.Failure` carries a `@StringRes` id, not a message string, so a new failure mode adds a string resource rather than a literal.
 - Dependencies are declared in `gradle/libs.versions.toml` only.

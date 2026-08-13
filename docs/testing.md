@@ -23,11 +23,11 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, after the code-review fixes.
-The result contained 17 passing unit tests and 32 passing instrumented tests with zero failures, errors, or skips.
-`lintDebug` and `assembleDebug` both exited zero.
+The automated gate was last run on 2026-08-13 against the API 34 `flutter_emulator` AVD at 1080 by 1920, on the audit-remediation branch at `a5e4cbb`.
+The result contained 24 passing unit tests and 42 passing instrumented tests with zero failures, errors, or skips.
+`lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
 
-The debug APK SHA-256 for that run is `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91`.
+The debug APK SHA-256 for that run is `1bf67850ad7fef5b6605c50a011279228599d96ce8b6eb4fbb104ce10fd49d96`.
 
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
@@ -68,6 +68,10 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 ## Manual Smoke Result
 
 ### 2026-08-13, post code-review fixes
+
+> [!WARNING]
+> This run predates the audit-remediation work and its APK is **not** the one in the baseline above.
+> Serialized imports and the animated preview placements landed afterwards and are user-visible, so the seven scenarios need another pass before release.
 
 All seven scenarios were re-run against APK SHA-256 `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91` on the API 34 `flutter_emulator` AVD, **driven through `adb` and `uiautomator` rather than by hand**.
 
