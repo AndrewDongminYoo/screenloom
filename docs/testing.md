@@ -95,6 +95,16 @@ Create Document cancellation also preserved the composition.
 The run exported `/sdcard/Download/review-safely.png`.
 It reopened as PNG with pixel width 1080 and pixel height 1920 and SHA-256 `9172afc05fb739fb5bc95aea22c8aeb8aaceea584e82009d4dae49d34b3c1d40`.
 
-## Repository Quality Follow-Up
+## Repository Quality Gate
 
-Run `$setup-trunk` only as a separately approved repository-quality task after the native Android MVP passes all gates.
+Trunk was adopted on 2026-08-13, after the MVP passed its gates.
+`trunk fmt` and `trunk check` run on changed files as the pre-commit and pre-push gate; `trunk check --all` is clean across 48 files.
+
+```bash
+trunk check
+```
+
+Two things about this repository's trunk setup are not obvious, and `.trunk/trunk.yaml` carries the full reasoning:
+
+- **Linter and runtime versions are pinned by hand.** `trunk upgrade` answers "already up to date" even when a pin is years old, because it resolves versions through unauthenticated `api.github.com`, which this machine cannot reach. Do not read that answer as current. Adding a plugins source does not fix it and breaks config parsing.
+- **ktlint is deliberately not enabled.** Kotlin formatting is unchecked on purpose; adopting the official style is a standalone decision.

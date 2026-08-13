@@ -1,0 +1,56 @@
+# This file controls the behavior of Trunk: https://docs.trunk.io/cli
+# To learn more about the format of this file, see https://docs.trunk.io/reference/trunk-yaml
+version: 0.1
+cli:
+  version: 1.25.0
+# Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
+runtimes:
+  enabled:
+    - go@1.19.5
+    - java@13.0.11
+    - node@22.11.0
+    - python@3.10.8
+# Versions are pinned by hand. `trunk upgrade` cannot discover newer ones here: it resolves
+# them through unauthenticated api.github.com, which this machine cannot reach, so it always
+# answers "already up to date". The bundled catalog does resolve explicit modern pins.
+#
+# Do not add a plugins source to fix that. `trunk plugins add …@v1.11.0` registers, but its
+# definitions then collide with CLI 1.25.0's bundled ones (bazel-differ, gt and shfmt end up
+# with both `download` and `package`) and trunk.yaml stops parsing entirely.
+#
+# ktlint is deliberately absent. ktlint 1.5.0 enforces the official Kotlin style and rewrites
+# 23 of the 26 Kotlin files (+1414/-1177) — expression bodies onto their own line, one
+# parameter per line for every data class. Adopting it is a standalone decision, not a
+# side effect of enabling linting. The old 0.43.2 that `trunk init` pins is not the answer
+# either: it only reshuffles imports, and pinning a 2021 ruleset is its own debt.
+lint:
+  enabled:
+    - checkov@3.3.10
+    - git-diff-check
+    - markdownlint@0.49.1
+    - prettier@3.9.6
+    # trivy was dropped: both pins 404 on their macOS-ARM64 release asset, and with no
+    # lockfile, image or IaC in this repo it had nothing to read anyway.
+    - osv-scanner@1.9.2
+    - shellcheck@0.10.0
+    - shfmt@3.10.0
+    - taplo@0.8.0
+    - trufflehog@3.31.3
+    - yamllint@1.38.0
+  ignore:
+    # Gradle-generated; reformatting or "fixing" these breaks the wrapper contract.
+    - linters: [ALL]
+      paths:
+        - gradlew
+        - gradlew.bat
+        - gradle/wrapper/**
+    # Vendored Google reference material, not this repository's prose.
+    - linters: [ALL]
+      paths:
+        - .agents/**
+actions:
+  enabled:
+    - trunk-announce
+    - trunk-check-pre-push
+    - trunk-fmt-pre-commit
+    - trunk-upgrade-available
