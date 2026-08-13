@@ -14,10 +14,15 @@ Booting a second instance of the same AVD is refused outright (`Running multiple
 
 ```bash
 $ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator_2 \
-  -no-window -no-audio -no-boot-anim -no-snapshot-save -memory 2048 -port 5556 &
+  -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim \
+  -no-snapshot-load -no-snapshot-save -memory 2048 -cores 2 -port 5556 &
 adb -s emulator-5556 wait-for-device
 ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
 ```
+
+`-gpu swiftshader_indirect` is load-bearing, not decoration.
+Dropping it once left the instance stuck at `offline` for 16 minutes with a live qemu process; the same AVD booted in 30 seconds with the flag restored.
+`-no-snapshot-load` keeps a stale snapshot from being restored into that same state.
 
 `ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator_2`.
 On a freshly booted AVD the system photo picker keeps its own index, so pushed images show as "No photos or videos" until the media provider is restarted:
