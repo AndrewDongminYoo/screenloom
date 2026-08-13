@@ -5,6 +5,7 @@ import android.net.Uri
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.render.PosterRenderer
 import java.io.OutputStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,6 +51,13 @@ class PosterExporter(
                 }
                 ExportResult.Success
             }
+        } catch (cancellation: CancellationException) {
+            // Never report cancellation as a failure: the caller is being torn down.
+            throw cancellation
+        } catch (_: OutOfMemoryError) {
+            // Allocating the 1080x1920 output alongside the resident previews is the one
+            // Error worth recovering from; every other VM-level failure stays fatal.
+            ExportResult.Failure(FailureMessage)
         } catch (_: Exception) {
             ExportResult.Failure(FailureMessage)
         } finally {

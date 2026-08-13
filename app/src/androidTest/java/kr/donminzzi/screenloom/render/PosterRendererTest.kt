@@ -16,6 +16,7 @@ import kr.donminzzi.screenloom.media.ExportResult
 import kr.donminzzi.screenloom.media.OutputStreamProvider
 import kr.donminzzi.screenloom.media.PosterExporter
 import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -72,6 +73,26 @@ class PosterRendererTest {
         )
 
         assertEquals(ExportResult.Failure("Unable to save PNG"), result)
+    }
+
+    @Test
+    fun exporterPropagatesCancellationInsteadOfReportingFailure() = runBlocking {
+        val source = Bitmap.createBitmap(320, 640, Bitmap.Config.ARGB_8888)
+        val exporter = PosterExporter(
+            PosterRenderer(),
+            OutputStreamProvider { throw CancellationException("scope cleared") },
+        )
+
+        val thrown = runCatching {
+            exporter.export(
+                uri = Uri.parse("content://screenloom/test"),
+                document = EditorDocument(imageCount = 1),
+                images = listOf(source),
+            )
+        }.exceptionOrNull()
+
+        assertTrue("expected CancellationException, got $thrown", thrown is CancellationException)
+        source.recycle()
     }
 
     @Test

@@ -30,6 +30,12 @@ internal const val POSTER_SHADOW_LAYER_COUNT = 12
 internal const val POSTER_TITLE_LINE_HEIGHT = 86f
 internal const val POSTER_SUBTITLE_LINE_HEIGHT = 42f
 
+// Shared 0-255 alphas. The preview divides by 255f; both renderers must read these rather
+// than hand-converting, which is how the subtitle drifted to 0.78f against the export's 190.
+internal const val POSTER_SUBTITLE_ALPHA = 190
+internal const val POSTER_GLOW_ALPHA = 30
+internal const val POSTER_TEXTURE_ALPHA = 18
+
 internal data class PosterShadowSpec(
     val radius: Float,
     val offsetY: Float,
@@ -102,13 +108,13 @@ class PosterRenderer {
 
         val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = palette.accentColor
-            alpha = 30
+            alpha = POSTER_GLOW_ALPHA
         }
         canvas.drawCircle(width * 0.82f, height * 0.18f, 240f * scale, glow)
 
         val texture = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            alpha = 18
+            alpha = POSTER_TEXTURE_ALPHA
         }
         repeat(9) { row ->
             repeat(6) { column ->
@@ -154,7 +160,7 @@ class PosterRenderer {
         if (document.subtitle.isNotBlank()) {
             val subtitle = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
-                alpha = 190
+                alpha = POSTER_SUBTITLE_ALPHA
                 textSize = 32f * scale
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             }
