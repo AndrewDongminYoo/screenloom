@@ -149,3 +149,132 @@ trunk check
 
 An unauthenticated `api.github.com` failure was also observed during setup and wrongly written up here as a property of this machine.
 It was transient — the endpoint answers normally now.
+
+## Sunlit Editorial QA and approval, 2026-08-14
+
+The Sunlit Editorial automated and manual QA evidence was recorded against debug APK SHA-256 `a176abeee6bc9618b325d9b8761a14e472c461255a10907878eb2a82f5f653f8`.
+
+### Automated, device, and permission evidence
+
+- The JVM suite passed with 31 tests, 0 failures, 0 errors, and 0 skipped.
+- The instrumented suite passed with 45 tests, 0 failures, 0 errors, and 0 skipped.
+- `lintDebug`, including `verifyDebugManifestPermissions`, passed.
+- `assembleDebug`, `trunk check`, worktree `git diff --check`, and main-checkout `git diff --check` passed.
+- The device was `emulator-5556`, `flutter_emulator_2(AVD) - 14`, API 34, `sdk_gphone64_arm64`, at 1080 by 1920.
+- A clean uninstall/install returned `Success`, and cold `am start -W` returned `Status: ok` with `TotalTime: 5139` ms.
+- The package declared and was granted only `kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+- The runtime permission section was empty, and no Android platform permission was present.
+
+### Commands used
+
+The following observed commands were used to produce the recorded evidence.
+They were not rerun for this documentation update.
+
+```bash
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew lintDebug
+ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
+ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest
+trunk check
+git diff --check
+git -C /Volumes/dongminyu/Development/01_personal/screenloom diff --check
+shasum -a 256 app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5556 uninstall kr.donminzzi.screenloom
+adb -s emulator-5556 install app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5556 shell am start -W -n kr.donminzzi.screenloom/.MainActivity
+adb -s emulator-5556 shell dumpsys package kr.donminzzi.screenloom
+sips -g pixelWidth -g pixelHeight app/build/outputs/manual-qa/sunlit-editorial/export-paper.png
+sips -g pixelWidth -g pixelHeight app/build/outputs/manual-qa/sunlit-editorial/export-cobalt.png
+sips -g pixelWidth -g pixelHeight app/build/outputs/manual-qa/sunlit-editorial/export-iris.png
+file app/build/outputs/manual-qa/sunlit-editorial/export-paper.png app/build/outputs/manual-qa/sunlit-editorial/export-cobalt.png app/build/outputs/manual-qa/sunlit-editorial/export-iris.png
+```
+
+### Manual scenarios
+
+1. [PARTIAL] Clean launch reached the canonical empty state after an emulator System UI ANR dialog was dismissed with its real `Wait` action.
+   The canonical capture contained no app permission dialog.
+2. [PARTIAL] The real Photo Picker showed recognizable pushed fixtures, and selecting one reached `01 FRAME / 1080 x 1920`.
+   This is the one-image Focus result.
+   Stack was then tapped, and fresh UIAutomator reported the nearest clickable Split ancestor as `enabled=false`; a disabled-content capture was recorded.
+3. [PARTIAL] The real Photo Picker showed `Add (2)` after two recognizable fixtures were selected.
+   The editor then showed `02 FRAMES / 1080 × 1920`; a fresh editor dump reported the nearest clickable Split ancestor as `enabled=true`, and tapping it produced the canonical Split capture.
+   UIAutomator selection was not used as selected-semantics evidence.
+4. [PARTIAL] Real Copy inputs changed to `Sunli` and `Pure`.
+   Real Style controls selected Paper, Cobalt, Coral, Mint, Iris, and Sunrise; Strong depth was selected and Device frame was toggled off before the changed-composition capture.
+   Pixel-change and visual-quality conclusions were retained for the human review.
+5. [PARTIAL] Replace opened the real Photo Picker and its Cancel action returned to `02 FRAMES`.
+   Export PNG opened the real Create Document picker and Back returned to the editor composition.
+   Fresh canonical dumps were taken after each return.
+6. [PARTIAL] Forced landscape produced a device-original 1920 by 1080 capture with `02 FRAMES / 1080 × 1920` and the preview still present.
+   Portrait was restored afterwards.
+7. [PARTIAL] Real Paper, Cobalt, and Iris exports were written through Create Document, pulled, verified as 1080 by 1920 RGBA PNGs, and opened through their MediaStore content URIs in Google Photos.
+
+### Capture inventory
+
+The application captures are `01-empty-state.png`, `01-empty-state.xml`, `02-layout-focus.png`, `03-layout-stack.png`, `13-split-disabled.png`, `04-layout-split.png`, `05-copy-tab.png`, `frame-off-strong-sunrise.png`, `import-cancel-preserved.png`, `export-cancel-preserved.png`, and `15-rotated-state.png`.
+
+The six palette captures are `06-style-paper.png`, `07-style-cobalt.png`, `08-style-coral.png`, `09-style-mint.png`, `10-style-iris.png`, and `11-style-sunrise.png`.
+
+The export and reopened captures are `export-paper.png`, `reopened-paper.png`, `export-cobalt.png`, `reopened-cobalt.png`, `export-iris.png`, and `reopened-iris.png`.
+
+### Export results
+
+Paper, Cobalt, and Iris each exported as a 1080 by 1920, 8-bit RGBA PNG and reopened through Google Photos via their MediaStore content URIs.
+
+The pulled Paper evidence is `export-paper.png` and its reopened capture is `reopened-paper.png`.
+The pulled Cobalt evidence is `export-cobalt.png` and its reopened capture is `reopened-cobalt.png`.
+The pulled Iris evidence is `export-iris.png` and its reopened capture is `reopened-iris.png`.
+
+### Limitations and approval
+
+- [PARTIAL] No faithful visible `12-importing.png` or `14-exporting.png` transient frame was captured, although the actual flows and lock/cancellation behavior were exercised.
+- [PARTIAL] One emulator System UI ANR dialog appeared before the canonical empty-state recapture and was dismissed with its real `Wait` action.
+  This was not established as an app regression.
+- [PARTIAL] One UIAutomator null-root result was retried successfully.
+- [PARTIAL] Seven stale completed-QA ADB command process groups caused an apparent transport stall.
+  Terminating only those groups restored ADB without restarting the emulator or changing app state.
+- [PARTIAL] Paper's on-device filename was `ssunlit-paper.png`.
+  The pulled evidence file is `export-paper.png`, and format and dimensions were unaffected.
+
+The operator reviewed the presented empty state, editor, six palette previews, and three export images.
+The exact visual verdict on 2026-08-14 was `네 승인합니다.`
+Its faithful English gloss is “Yes, I approve.”
+
+## Sunlit Editorial final-remediation approval, 2026-08-14
+
+This section records evidence for the remediated APK SHA-256 `2e8c4cfa8971a057e3b2fe61b98ea08d33a4cf9a433222af75b3cd73fa76d5a2`.
+It is distinct from the preceding historical approval of APK SHA-256 `a176abeee6bc9618b325d9b8761a14e472c461255a10907878eb2a82f5f653f8`, whose exact verdict `네 승인합니다.` remains historical.
+
+### Final-remediation automated, device, and permission evidence
+
+- The JVM suite passed with 31 tests, 0 failures, 0 errors, and 0 skipped.
+- The connected API 34 suite on `emulator-5556` passed with 47 tests, 0 failures, 0 errors, and 0 skipped.
+- `lintDebug`, including `verifyDebugManifestPermissions`, `assembleDebug`, `trunk check`, worktree `git diff --check`, and main-checkout `git diff --check` passed.
+- The package contained only the signature-protected `kr.donminzzi.screenloom.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+- The runtime permissions section was empty.
+
+### Affected manual QA
+
+- On API 34 at 1080 by 1920 portrait, installation returned `Success` and cold launch returned `Status: ok` with `TotalTime: 1702` ms.
+- The real Photo Picker accepted two fixtures with `Add (2)`, and the editor showed `02 FRAMES / 1080 × 1920`.
+- Real Copy inputs changed to `Sunli` and `Pure`.
+- Cobalt and Iris previews showed warm-white copy within the dark rounded copy zone and strengthened Ink metadata and section labels, with no observed clipping.
+- Real Create Document exports `post-review-cobalt.png` and `post-review-iris.png` were each verified as 1080 by 1920, 8-bit RGBA PNGs.
+- The Cobalt and Iris exports reopened in Google Photos through MediaStore URI IDs `1000000203` and `1000000195`, respectively.
+
+### Final-remediation capture inventory
+
+The post-review capture prefix is `post-review-`.
+The captures are `post-review-01-empty.png`, `post-review-02-editor-layout.png`, `post-review-03-cobalt-preview.png`, `post-review-04-iris-preview.png`, `post-review-export-cobalt.png`, `post-review-export-iris.png`, `post-review-reopened-cobalt.png`, and `post-review-reopened-iris.png`.
+XML evidence was stored alongside the first four captures where present.
+
+### Limitations and final approval
+
+- [PARTIAL] The uninstall command returned `Failure [DELETE_FAILED_INTERNAL_ERROR]`.
+  An immediate `pm` path check showed the package absent, and the subsequent install succeeded.
+- [PARTIAL] Direct comparison supports the requested affected changes but cannot prove an exhaustive global visual diff because the earlier captures used a different layout and fixture composition.
+- [PARTIAL] The earlier transient Importing and Exporting capture limitation remains historical and is not a claim about this remediated APK.
+
+The operator reviewed the remediated captures.
+The exact final approval of the remediated APK on 2026-08-14 was `네 동의합니다.`
+Its faithful English gloss is “Yes, I agree.”
