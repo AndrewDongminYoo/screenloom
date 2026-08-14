@@ -22,18 +22,51 @@ import kotlin.math.roundToInt
 data class PosterPalette(
     val startColor: Int,
     val endColor: Int,
-    val accentColor: Int,
+    val headlineColor: Int,
+    val supportingCopyColor: Int,
+    val frameColor: Int,
+    val shadowColor: Int,
+    val ribbonOneColor: Int,
+    val ribbonTwoColor: Int,
+    val sunColor: Int,
+    val copyZoneColor: Int?,
 )
 
 internal const val POSTER_SHADOW_LAYER_COUNT = 12
 internal const val POSTER_TITLE_LINE_HEIGHT = 86f
 internal const val POSTER_SUBTITLE_LINE_HEIGHT = 42f
+internal const val POSTER_SUN_ALPHA = 176
+internal const val POSTER_RIBBON_ALPHA = 72
+internal const val POSTER_COPY_ZONE_ALPHA = 235
 
-// Shared 0-255 alphas. The preview divides by 255f; both renderers must read these rather
-// than hand-converting, which is how the subtitle drifted to 0.78f against the export's 190.
-internal const val POSTER_SUBTITLE_ALPHA = 190
-internal const val POSTER_GLOW_ALPHA = 30
-internal const val POSTER_TEXTURE_ALPHA = 18
+internal data class PosterCopyZoneSpec(
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+    val cornerRadius: Float,
+)
+
+internal val PosterCopyZone = PosterCopyZoneSpec(
+    left = 60f,
+    top = 105f,
+    right = 1020f,
+    bottom = 480f,
+    cornerRadius = 48f,
+)
+
+internal data class PosterRibbonSpec(
+    val left: Float,
+    val top: Float,
+    val width: Float,
+    val height: Float,
+    val rotationDegrees: Float,
+)
+
+internal val PosterRibbonSpecs = listOf(
+    PosterRibbonSpec(left = -170f, top = 820f, width = 1420f, height = 210f, rotationDegrees = -12f),
+    PosterRibbonSpec(left = -160f, top = 1040f, width = 1400f, height = 180f, rotationDegrees = 14f),
+)
 
 internal data class PosterShadowSpec(
     val radius: Float,
@@ -60,12 +93,78 @@ internal fun ShadowLevel.posterShadowSpec(scale: Float): PosterShadowSpec = Post
 )
 
 fun PaletteId.colors(): PosterPalette = when (this) {
-    PaletteId.Ink -> PosterPalette(0xFF0B1020.toInt(), 0xFF243B6B.toInt(), 0xFFFFD166.toInt())
-    PaletteId.Cobalt -> PosterPalette(0xFF101B4D.toInt(), 0xFF3457D5.toInt(), 0xFFFFF4E6.toInt())
-    PaletteId.Coral -> PosterPalette(0xFF351C35.toInt(), 0xFFF06A6A.toInt(), 0xFFFFE2B8.toInt())
-    PaletteId.Moss -> PosterPalette(0xFF10251F.toInt(), 0xFF4D8061.toInt(), 0xFFE9D8A6.toInt())
-    PaletteId.Violet -> PosterPalette(0xFF1C1338.toInt(), 0xFF7B5BC7.toInt(), 0xFFFFB4A2.toInt())
-    PaletteId.Sunrise -> PosterPalette(0xFF3A1C2E.toInt(), 0xFFF28C54.toInt(), 0xFFFFE8C2.toInt())
+    PaletteId.Ink -> PosterPalette(
+        startColor = 0xFFFFF8E9.toInt(),
+        endColor = 0xFFFFD9A2.toInt(),
+        headlineColor = 0xFF18213D.toInt(),
+        supportingCopyColor = 0xFF18213D.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFF566EFF.toInt(),
+        ribbonTwoColor = 0xFFFF6B4A.toInt(),
+        sunColor = 0xFFFFD466.toInt(),
+        copyZoneColor = null,
+    )
+    PaletteId.Cobalt -> PosterPalette(
+        startColor = 0xFF3557F0.toInt(),
+        endColor = 0xFF78DBEF.toInt(),
+        headlineColor = 0xFFFFF8E9.toInt(),
+        supportingCopyColor = 0xFFFFF8E9.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFFFFD466.toInt(),
+        ribbonTwoColor = 0xFFFF6B4A.toInt(),
+        sunColor = 0xFFFFF8E9.toInt(),
+        copyZoneColor = 0xFF3557F0.toInt(),
+    )
+    PaletteId.Coral -> PosterPalette(
+        startColor = 0xFFFF765C.toInt(),
+        endColor = 0xFFFFC46D.toInt(),
+        headlineColor = 0xFF18213D.toInt(),
+        supportingCopyColor = 0xFF18213D.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFFFFF8E9.toInt(),
+        ribbonTwoColor = 0xFF566EFF.toInt(),
+        sunColor = 0xFFFFF0BD.toInt(),
+        copyZoneColor = null,
+    )
+    PaletteId.Moss -> PosterPalette(
+        startColor = 0xFF6BD7B3.toInt(),
+        endColor = 0xFFD8EF6A.toInt(),
+        headlineColor = 0xFF18213D.toInt(),
+        supportingCopyColor = 0xFF18213D.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFF18213D.toInt(),
+        ribbonTwoColor = 0xFFFF6B4A.toInt(),
+        sunColor = 0xFFFFF8E9.toInt(),
+        copyZoneColor = null,
+    )
+    PaletteId.Violet -> PosterPalette(
+        startColor = 0xFF5D50D8.toInt(),
+        endColor = 0xFFF3A1C7.toInt(),
+        headlineColor = 0xFFFFF8E9.toInt(),
+        supportingCopyColor = 0xFFFFF8E9.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFFFFD466.toInt(),
+        ribbonTwoColor = 0xFFFFF8E9.toInt(),
+        sunColor = 0xFFFFD466.toInt(),
+        copyZoneColor = 0xFF5D50D8.toInt(),
+    )
+    PaletteId.Sunrise -> PosterPalette(
+        startColor = 0xFFFFE26C.toInt(),
+        endColor = 0xFFFF7C56.toInt(),
+        headlineColor = 0xFF18213D.toInt(),
+        supportingCopyColor = 0xFF18213D.toInt(),
+        frameColor = 0xFF18213D.toInt(),
+        shadowColor = 0xFF18213D.toInt(),
+        ribbonOneColor = 0xFF566EFF.toInt(),
+        ribbonTwoColor = 0xFFFFF8E9.toInt(),
+        sunColor = 0xFFFFF8E9.toInt(),
+        copyZoneColor = null,
+    )
 }
 
 class PosterRenderer {
@@ -79,9 +178,11 @@ class PosterRenderer {
         val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
         val scale = width / 1080f
-        drawBackground(canvas, document.palette.colors(), width, height, scale)
-        drawCopy(canvas, document, width, scale)
-        drawScreenshots(canvas, document, images, width, height, scale)
+        val palette = document.palette.colors()
+        drawBackground(canvas, palette, width, height, scale)
+        drawCopyZone(canvas, document, palette, scale)
+        drawScreenshots(canvas, document, images, palette, width, height, scale)
+        drawCopy(canvas, document, palette, width, scale)
         return output
     }
 
@@ -105,28 +206,68 @@ class PosterRenderer {
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), background)
 
-        val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = palette.accentColor
-            alpha = POSTER_GLOW_ALPHA
+        val sun = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = palette.sunColor
+            alpha = POSTER_SUN_ALPHA
         }
-        canvas.drawCircle(width * 0.82f, height * 0.18f, 240f * scale, glow)
+        canvas.drawCircle(width * 0.82f, height * 0.18f, 240f * scale, sun)
+        PosterRibbonSpecs.zip(listOf(palette.ribbonOneColor, palette.ribbonTwoColor)).forEach { (spec, color) ->
+            drawRibbon(canvas, spec, color, scale)
+        }
+    }
 
-        val texture = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            alpha = POSTER_TEXTURE_ALPHA
+    private fun drawRibbon(
+        canvas: Canvas,
+        spec: PosterRibbonSpec,
+        color: Int,
+        scale: Float,
+    ) {
+        val bounds = RectF(
+            spec.left * scale,
+            spec.top * scale,
+            (spec.left + spec.width) * scale,
+            (spec.top + spec.height) * scale,
+        )
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            alpha = POSTER_RIBBON_ALPHA
         }
-        repeat(9) { row ->
-            repeat(6) { column ->
-                val x = (82f + column * 184f + (row % 2) * 36f) * scale
-                val y = (120f + row * 210f) * scale
-                canvas.drawCircle(x, y, 2.2f * scale, texture)
-            }
+        canvas.save()
+        canvas.rotate(spec.rotationDegrees, bounds.centerX(), bounds.centerY())
+        canvas.drawRoundRect(bounds, bounds.height() / 2f, bounds.height() / 2f, paint)
+        canvas.restore()
+    }
+
+    private fun drawCopyZone(
+        canvas: Canvas,
+        document: EditorDocument,
+        palette: PosterPalette,
+        scale: Float,
+    ) {
+        if (document.title.isBlank() && document.subtitle.isBlank()) return
+        val color = palette.copyZoneColor ?: return
+        val bounds = RectF(
+            PosterCopyZone.left * scale,
+            PosterCopyZone.top * scale,
+            PosterCopyZone.right * scale,
+            PosterCopyZone.bottom * scale,
+        )
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            alpha = POSTER_COPY_ZONE_ALPHA
         }
+        canvas.drawRoundRect(
+            bounds,
+            PosterCopyZone.cornerRadius * scale,
+            PosterCopyZone.cornerRadius * scale,
+            paint,
+        )
     }
 
     private fun drawCopy(
         canvas: Canvas,
         document: EditorDocument,
+        palette: PosterPalette,
         width: Int,
         scale: Float,
     ) {
@@ -134,9 +275,9 @@ class PosterRenderer {
         var nextY = 150f * scale
         if (document.title.isNotBlank()) {
             val title = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.rgb(245, 241, 232)
+                color = palette.headlineColor
                 textSize = 78f * scale
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             }
             val layout = StaticLayout.Builder.obtain(
                 document.title,
@@ -158,8 +299,7 @@ class PosterRenderer {
         }
         if (document.subtitle.isNotBlank()) {
             val subtitle = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE
-                alpha = POSTER_SUBTITLE_ALPHA
+                color = palette.supportingCopyColor
                 textSize = 32f * scale
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             }
@@ -186,6 +326,7 @@ class PosterRenderer {
         canvas: Canvas,
         document: EditorDocument,
         images: List<Bitmap>,
+        palette: PosterPalette,
         width: Int,
         height: Int,
         scale: Float,
@@ -202,6 +343,7 @@ class PosterRenderer {
                 bitmap = images[imagePlacement.imageIndex],
                 frameEnabled = document.frameEnabled,
                 shadowLevel = document.shadow,
+                palette = palette,
                 scale = scale,
             )
         }
@@ -213,6 +355,7 @@ class PosterRenderer {
         bitmap: Bitmap,
         frameEnabled: Boolean,
         shadowLevel: ShadowLevel,
+        palette: PosterPalette,
         scale: Float,
     ) {
         val bounds = RectF(
@@ -232,7 +375,12 @@ class PosterRenderer {
                 offset(0f, shadowSpec.offsetY)
                 inset(-expansion, -expansion)
             }
-            shadowPaint.color = Color.argb(shadowSpec.layerAlpha(layerIndex), 0, 0, 0)
+            shadowPaint.color = Color.argb(
+                shadowSpec.layerAlpha(layerIndex),
+                Color.red(palette.shadowColor),
+                Color.green(palette.shadowColor),
+                Color.blue(palette.shadowColor),
+            )
             canvas.drawRoundRect(
                 shadowBounds,
                 radius + expansion,
@@ -243,7 +391,7 @@ class PosterRenderer {
 
         val inset = if (frameEnabled) 16f * scale else 0f
         if (frameEnabled) {
-            val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(20, 23, 30) }
+            val frame = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.frameColor }
             canvas.drawRoundRect(bounds, radius, radius, frame)
         }
         val screen = RectF(bounds).apply { inset(inset, inset) }

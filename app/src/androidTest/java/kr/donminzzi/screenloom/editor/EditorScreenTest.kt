@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -21,10 +22,17 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.ui.theme.ScreenloomTheme
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -206,7 +214,7 @@ class EditorScreenTest {
             compose.onNodeWithText("Layout").assertSelected()
             compose.onNodeWithText("Focus").assertSelected()
             compose.onNodeWithText("Style").performClick().assertSelected()
-            compose.onNodeWithText("Ink").assertSelected()
+            compose.onNodeWithText("Paper").assertSelected()
             compose.onNodeWithText("Medium").assertSelected()
         } finally {
             compose.runOnIdle { state = EditorUiState() }
@@ -236,7 +244,7 @@ class EditorScreenTest {
             restorationTester.emulateSavedInstanceStateRestore()
 
             compose.onNodeWithText("Style").assertSelected()
-            compose.onNodeWithText("Ink").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText("Paper").performScrollTo().assertIsDisplayed()
         } finally {
             compose.runOnIdle { state = EditorUiState() }
             source.recycle()
@@ -253,7 +261,107 @@ class EditorScreenTest {
         )
     }
 
+    @Test
+    fun renamedPaletteLabelsDispatchTheStablePaletteIdentifiers() {
+        val actions = mutableListOf<EditorAction>()
+        compose.setContent {
+            ScreenloomTheme {
+                EditorScreen(
+                    state = oneImageState(),
+                    onChooseImages = {},
+                    onRequestExport = {},
+                    onAction = actions::add,
+                    onMessageConsumed = {},
+                )
+            }
+        }
+
+        compose.onNodeWithText("Style").performClick()
+        compose.onNodeWithText("Paper").assertIsDisplayed().assertSelected()
+        compose.onNodeWithText("Mint").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText("Iris").performScrollTo().assertIsDisplayed().performClick()
+
+        compose.runOnIdle {
+            assertEquals(EditorAction.SetPalette(PaletteId.Moss), actions[actions.lastIndex - 1])
+            assertEquals(EditorAction.SetPalette(PaletteId.Violet), actions.last())
+        }
+    }
+
+    @Test
+    fun metadataAndSectionLabelsUseLegibleForegroundsOnTheirRenderedSurfaces() {
+        val state = oneImageState()
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                    )
+                }
+            }
+
+            compose.onNodeWithText("01 FRAME / 1080 × 1920")
+                .assertRenderedForegroundHasPerimeterContrast(0xFF18213D.toInt())
+            compose.onNodeWithText("COMPOSITION")
+                .assertRenderedForegroundHasPerimeterContrast(0xFF18213D.toInt())
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
+    }
+
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertSelected() = assert(
         SemanticsMatcher.expectValue(SemanticsProperties.Selected, true),
     )
+
+    private fun SemanticsNodeInteraction.assertRenderedForegroundHasPerimeterContrast(foreground: Int) {
+        val pixels = captureToImage().toPixelMap()
+        val foregroundExists = (0 until pixels.height).any { y ->
+            (0 until pixels.width).any { x ->
+                val pixel = pixels[x, y]
+                pixel.alpha >= 0.99f && colorMatches(pixel.red, pixel.green, pixel.blue, foreground)
+            }
+        }
+        assertTrue("Expected rendered foreground $foreground", foregroundExists)
+
+        val perimeterColors = listOf(
+            pixels[0, 0],
+            pixels[pixels.width - 1, 0],
+            pixels[0, pixels.height - 1],
+            pixels[pixels.width - 1, pixels.height - 1],
+        ).filter { it.alpha >= 0.99f }
+        assertTrue("Expected opaque line-box perimeter pixels", perimeterColors.isNotEmpty())
+        perimeterColors.forEach { background ->
+            val ratio = contrastRatio(foreground, rgb(background.red, background.green, background.blue))
+            assertTrue("Foreground $foreground contrast is $ratio", ratio >= 4.5)
+        }
+    }
+
+    private fun colorMatches(red: Float, green: Float, blue: Float, target: Int): Boolean =
+        abs(red * 255 - (target ushr 16 and 0xFF)) <= 4f &&
+            abs(green * 255 - (target ushr 8 and 0xFF)) <= 4f &&
+            abs(blue * 255 - (target and 0xFF)) <= 4f
+
+    private fun rgb(red: Float, green: Float, blue: Float): Int =
+        (0xFF shl 24) or
+            ((red * 255).toInt() shl 16) or
+            ((green * 255).toInt() shl 8) or
+            (blue * 255).toInt()
+
+    private fun contrastRatio(first: Int, second: Int): Double {
+        val firstLuminance = relativeLuminance(first)
+        val secondLuminance = relativeLuminance(second)
+        return (max(firstLuminance, secondLuminance) + 0.05) /
+            (min(firstLuminance, secondLuminance) + 0.05)
+    }
+
+    private fun relativeLuminance(color: Int): Double {
+        fun component(shift: Int): Double {
+            val encoded = ((color ushr shift) and 0xFF) / 255.0
+            return if (encoded <= 0.04045) encoded / 12.92 else ((encoded + 0.055) / 1.055).pow(2.4)
+        }
+        return 0.2126 * component(16) + 0.7152 * component(8) + 0.0722 * component(0)
+    }
 }

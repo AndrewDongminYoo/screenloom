@@ -51,6 +51,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.render.colors
+import kr.donminzzi.screenloom.ui.theme.Cobalt
+import kr.donminzzi.screenloom.ui.theme.ElevatedPaper
+import kr.donminzzi.screenloom.ui.theme.Ink
+import kr.donminzzi.screenloom.ui.theme.MutedInk
+import kr.donminzzi.screenloom.ui.theme.Outline
+import kr.donminzzi.screenloom.ui.theme.Paper
+import kr.donminzzi.screenloom.ui.theme.SelectedWash
 
 private enum class EditorTab(val labelRes: Int) {
     Layout(R.string.tab_layout),
@@ -66,45 +73,54 @@ internal fun EditorControls(
     modifier: Modifier = Modifier,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(EditorTab.Layout) }
-    Column(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(18.dp))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            EditorTab.entries.forEach { tab ->
-                val selected = selectedTab == tab
-                Button(
-                    onClick = { selectedTab = tab },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 48.dp)
-                        .semantics { this.selected = selected },
-                    enabled = enabled,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
-                        contentColor = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledContainerColor = Color.Transparent,
-                    ),
-                    contentPadding = ButtonDefaults.TextButtonContentPadding,
-                ) {
-                    Text(text = stringResource(tab.labelRes), maxLines = 1)
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(24.dp),
+        border = BorderStroke(1.dp, Outline),
+        tonalElevation = 6.dp,
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(18.dp))
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                EditorTab.entries.forEach { tab ->
+                    val selected = selectedTab == tab
+                    Button(
+                        onClick = { selectedTab = tab },
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .semantics { this.selected = selected },
+                        enabled = enabled,
+                        shape = MaterialTheme.shapes.small,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selected) Ink else Color.Transparent,
+                            contentColor = if (selected) Paper else MutedInk,
+                            disabledContainerColor = Color.Transparent,
+                            disabledContentColor = MutedInk.copy(alpha = 0.42f),
+                        ),
+                        contentPadding = ButtonDefaults.TextButtonContentPadding,
+                    ) {
+                        Text(text = stringResource(tab.labelRes), maxLines = 1)
+                    }
                 }
             }
-        }
-        AnimatedContent(
-            targetState = selectedTab,
-            modifier = Modifier.padding(top = 18.dp),
-            transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(90)) },
-            label = "editor controls",
-        ) { tab ->
-            when (tab) {
-                EditorTab.Layout -> LayoutControls(document, enabled, onAction)
-                EditorTab.Copy -> CopyControls(document, enabled, onAction)
-                EditorTab.Style -> StyleControls(document, enabled, onAction)
+            AnimatedContent(
+                targetState = selectedTab,
+                modifier = Modifier.padding(top = 18.dp),
+                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(90)) },
+                label = "editor controls",
+            ) { tab ->
+                when (tab) {
+                    EditorTab.Layout -> LayoutControls(document, enabled, onAction)
+                    EditorTab.Copy -> CopyControls(document, enabled, onAction)
+                    EditorTab.Style -> StyleControls(document, enabled, onAction)
+                }
             }
         }
     }
@@ -119,32 +135,6 @@ private fun LayoutControls(
     val deviceFrameLabel = stringResource(R.string.device_frame)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel(R.string.layout_section_label)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            LayoutMode.entries.forEach { layout ->
-                val splitUnavailable = layout == LayoutMode.Split && !document.canUseSplit
-                val unavailableDescription = stringResource(R.string.split_unavailable)
-                OptionButton(
-                    text = when (layout) {
-                        LayoutMode.Focus -> stringResource(R.string.layout_focus)
-                        LayoutMode.Stack -> stringResource(R.string.layout_stack)
-                        LayoutMode.Split -> stringResource(R.string.layout_split)
-                    },
-                    selected = document.layout == layout,
-                    enabled = enabled && !splitUnavailable,
-                    modifier = Modifier
-                        .weight(1f)
-                        .semantics {
-                            if (splitUnavailable) stateDescription = unavailableDescription
-                        },
-                    onClick = { onAction(EditorAction.SetLayout(layout)) },
-                )
-            }
-        }
-        Text(
-            text = stringResource(R.string.layout_hint),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-        )
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(18.dp),
@@ -171,6 +161,32 @@ private fun LayoutControls(
                 )
             }
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LayoutMode.entries.forEach { layout ->
+                val splitUnavailable = layout == LayoutMode.Split && !document.canUseSplit
+                val unavailableDescription = stringResource(R.string.split_unavailable)
+                OptionButton(
+                    text = when (layout) {
+                        LayoutMode.Focus -> stringResource(R.string.layout_focus)
+                        LayoutMode.Stack -> stringResource(R.string.layout_stack)
+                        LayoutMode.Split -> stringResource(R.string.layout_split)
+                    },
+                    selected = document.layout == layout,
+                    enabled = enabled && !splitUnavailable,
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics {
+                            if (splitUnavailable) stateDescription = unavailableDescription
+                        },
+                    onClick = { onAction(EditorAction.SetLayout(layout)) },
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.layout_hint),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 
@@ -263,6 +279,9 @@ private fun PaletteButton(
     onClick: () -> Unit,
 ) {
     val colors = palette.colors()
+    val outlineWidth = if (selected) 2.dp else 1.dp
+    val outlineColor = if (selected) Cobalt else Outline
+    val containerColor = if (selected) SelectedWash else ElevatedPaper
     val name = when (palette) {
         PaletteId.Ink -> stringResource(R.string.palette_ink)
         PaletteId.Cobalt -> stringResource(R.string.palette_cobalt)
@@ -277,11 +296,11 @@ private fun PaletteButton(
             .width(76.dp)
             .semantics { this.selected = selected },
         enabled = enabled,
-        color = if (selected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent,
+        color = containerColor,
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(
-            width = 1.dp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+            width = outlineWidth,
+            color = outlineColor,
         ),
     ) {
         Column(
@@ -319,20 +338,23 @@ private fun OptionButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val outlineWidth = if (selected) 2.dp else 1.dp
+    val outlineColor = if (selected) Cobalt else Outline
+    val containerColor = if (selected) SelectedWash else ElevatedPaper
     Button(
         onClick = onClick,
         modifier = modifier
             .heightIn(min = 48.dp)
             .semantics { this.selected = selected },
         enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
+        shape = MaterialTheme.shapes.small,
         border = BorderStroke(
-            width = 1.dp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+            width = outlineWidth,
+            color = outlineColor,
         ),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = containerColor,
+            contentColor = Ink,
             disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
             disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
         ),
@@ -346,7 +368,7 @@ private fun OptionButton(
 private fun SectionLabel(textRes: Int) {
     Text(
         text = stringResource(textRes),
-        color = MaterialTheme.colorScheme.secondary,
+        color = MaterialTheme.colorScheme.onSurface,
         style = MaterialTheme.typography.labelSmall,
     )
 }

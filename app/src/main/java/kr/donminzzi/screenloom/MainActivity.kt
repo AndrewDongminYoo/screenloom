@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import kr.donminzzi.screenloom.editor.EditorViewModel
@@ -15,6 +16,8 @@ import kr.donminzzi.screenloom.media.ImageDecoder
 import kr.donminzzi.screenloom.media.OutputStreamProvider
 import kr.donminzzi.screenloom.media.PosterExporter
 import kr.donminzzi.screenloom.render.PosterRenderer
+import kr.donminzzi.screenloom.ui.theme.Ink
+import kr.donminzzi.screenloom.ui.theme.Paper
 
 class MainActivity : ComponentActivity() {
     private val editorViewModel: EditorViewModel by viewModels {
@@ -38,8 +41,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
+            statusBarStyle = SystemBarStyle.light(Paper.toArgb(), Ink.toArgb()),
+            navigationBarStyle = SystemBarStyle.light(Paper.toArgb(), Ink.toArgb()),
         )
         val imagePicker = registerForActivityResult(
             ActivityResultContracts.PickMultipleVisualMedia(2),
