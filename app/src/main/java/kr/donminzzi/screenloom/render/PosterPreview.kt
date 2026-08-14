@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -157,6 +158,7 @@ fun PosterPreview(
             }
         }
         val animatedImagesByIndex = animatedImages.associateBy { it.imageIndex }
+        val palette = document.palette.colors()
         val posterDensity = Density(LocalDensity.current.density, fontScale = 1f)
         val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
         val topPadding = (maxWidth.value * 150f / 1080f).dp
@@ -168,7 +170,6 @@ fun PosterPreview(
         Canvas(
             modifier = Modifier.fillMaxSize(),
         ) {
-            val palette = document.palette.colors()
             drawRect(
                 brush = Brush.linearGradient(
                     colors = listOf(Color(palette.startColor), Color(palette.endColor)),
@@ -177,21 +178,15 @@ fun PosterPreview(
                 )
             )
             drawCircle(
-                color = Color(palette.accentColor).copy(alpha = POSTER_GLOW_ALPHA / 255f),
-                radius = size.width * 0.22f,
+                color = Color(palette.sunColor).copy(alpha = POSTER_SUN_ALPHA / 255f),
+                radius = 240f * size.width / 1080f,
                 center = Offset(size.width * 0.82f, size.height * 0.18f),
             )
-            repeat(9) { row ->
-                repeat(6) { column ->
-                    drawCircle(
-                        color = Color.White.copy(alpha = POSTER_TEXTURE_ALPHA / 255f),
-                        radius = size.width * 0.002f,
-                        center = Offset(
-                            x = size.width * ((82f + column * 184f + (row % 2) * 36f) / 1080f),
-                            y = size.height * ((120f + row * 210f) / 1920f),
-                        ),
-                    )
-                }
+            PosterRibbonSpecs.zip(listOf(palette.ribbonOneColor, palette.ribbonTwoColor)).forEach { (spec, color) ->
+                drawPreviewRibbon(spec, color)
+            }
+            if (document.title.isNotBlank() || document.subtitle.isNotBlank()) {
+                palette.copyZoneColor?.let { drawPreviewCopyZone(it) }
             }
             transition.targetState.drawOrder().forEach { imageIndex ->
                 val animatedImage = animatedImagesByIndex.getValue(imageIndex)
@@ -200,6 +195,8 @@ fun PosterPreview(
                     image = images[imageIndex],
                     frameEnabled = document.frameEnabled,
                     shadowLevel = document.shadow,
+                    frameColor = palette.frameColor,
+                    shadowColor = palette.shadowColor,
                     alpha = animatedImage.alpha,
                 )
             }
@@ -215,8 +212,9 @@ fun PosterPreview(
                 if (document.title.isNotBlank()) {
                     Text(
                         text = document.title,
-                        color = Color(0xFFF5F1E8),
+                        color = Color(palette.headlineColor),
                         fontSize = titleSize,
+                        fontFamily = FontFamily.Serif,
                         fontWeight = FontWeight.Bold,
                         lineHeight = titleLineHeight,
                         maxLines = 2,
@@ -229,8 +227,9 @@ fun PosterPreview(
                         modifier = Modifier.padding(
                             top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
                         ),
-                        color = Color.White.copy(alpha = POSTER_SUBTITLE_ALPHA / 255f),
+                        color = Color(palette.supportingCopyColor),
                         fontSize = subtitleSize,
+                        fontFamily = FontFamily.SansSerif,
                         lineHeight = subtitleLineHeight,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -246,6 +245,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
     image: ImageBitmap,
     frameEnabled: Boolean,
     shadowLevel: ShadowLevel,
+    frameColor: Int,
+    shadowColor: Int,
     alpha: Float,
 ) {
     if (alpha <= 0f) return
@@ -257,7 +258,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
         for (layerIndex in POSTER_SHADOW_LAYER_COUNT downTo 1) {
             val expansion = shadowSpec.expansion(layerIndex)
             drawRoundRect(
-                color = Color.Black.copy(alpha = shadowSpec.layerAlpha(layerIndex) / 255f * alpha),
+                color = Color(shadowColor).copy(alpha = shadowSpec.layerAlpha(layerIndex) / 255f * alpha),
                 topLeft = topLeft + Offset(-expansion, shadowSpec.offsetY - expansion),
                 size = Size(
                     width = targetSize.width + expansion * 2f,
@@ -268,7 +269,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
         }
         if (frameEnabled) {
             drawRoundRect(
-                color = Color(0xFF14171E).copy(alpha = alpha),
+                color = Color(frameColor).copy(alpha = alpha),
                 topLeft = topLeft,
                 size = targetSize,
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(corner),
@@ -301,6 +302,39 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewImage(
             )
         }
     }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewRibbon(
+    spec: PosterRibbonSpec,
+    color: Int,
+) {
+    val scale = size.width / 1080f
+    val topLeft = Offset(spec.left * scale, spec.top * scale)
+    val ribbonSize = Size(spec.width * scale, spec.height * scale)
+    rotate(
+        degrees = spec.rotationDegrees,
+        pivot = topLeft + Offset(ribbonSize.width / 2f, ribbonSize.height / 2f),
+    ) {
+        drawRoundRect(
+            color = Color(color).copy(alpha = POSTER_RIBBON_ALPHA / 255f),
+            topLeft = topLeft,
+            size = ribbonSize,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(ribbonSize.height / 2f),
+        )
+    }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawPreviewCopyZone(color: Int) {
+    val scale = size.width / 1080f
+    drawRoundRect(
+        color = Color(color).copy(alpha = POSTER_COPY_ZONE_ALPHA / 255f),
+        topLeft = Offset(PosterCopyZone.left * scale, PosterCopyZone.top * scale),
+        size = Size(
+            width = (PosterCopyZone.right - PosterCopyZone.left) * scale,
+            height = (PosterCopyZone.bottom - PosterCopyZone.top) * scale,
+        ),
+        cornerRadius = androidx.compose.ui.geometry.CornerRadius(PosterCopyZone.cornerRadius * scale),
+    )
 }
 
 private fun centerCrop(

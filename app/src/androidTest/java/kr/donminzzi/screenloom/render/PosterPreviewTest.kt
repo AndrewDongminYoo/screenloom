@@ -31,6 +31,9 @@ import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -61,6 +64,83 @@ class PosterPreviewTest {
         compose.onNodeWithContentDescription(previewDescription).assertIsDisplayed()
         compose.onNodeWithText("Ship beautifully").assertDoesNotExist()
         compose.onNodeWithText("Store-ready visuals in seconds.").assertDoesNotExist()
+    }
+
+    @Test
+    fun everySunlitPaletteMatchesTheExportAtDecorationSamples() {
+        var document by mutableStateOf(EditorDocument())
+        compose.setContent {
+            Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                PosterPreview(document = document, images = emptyList())
+            }
+        }
+
+        val baseSample = 108 to 192
+        val sunSample = 886 to 346
+        val ribbonSamples = listOf(540 to 925, 540 to 1130)
+        PaletteId.entries.forEach { paletteId ->
+            compose.runOnIdle { document = EditorDocument(palette = paletteId) }
+            val preview = compose.onNodeWithTag("preview-capture").captureToImage()
+            val export = PosterRenderer().render(document, emptyList(), 1080, 1920)
+            try {
+                listOf(baseSample, sunSample).plus(ribbonSamples).forEach { (x, y) ->
+                    assertPixelChannelsWithinTolerance(preview, export, x, y, tolerance = 8)
+                }
+                ribbonSamples.forEach { (x, y) ->
+                    assertColorDiffersFromGradient(export.getPixel(x, y), paletteId.colors(), x, y)
+                }
+            } finally {
+                export.recycle()
+            }
+        }
+    }
+
+    @Test
+    fun cobaltAndVioletCopyZonesMakeWarmWhiteCopyLegibleAndStayAbsentWhenCopyIsBlank() {
+        var document by mutableStateOf(EditorDocument())
+        compose.setContent {
+            Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                PosterPreview(document = document, images = emptyList())
+            }
+        }
+
+        val copySamples = listOf(886 to 346, 990 to 450)
+        listOf(PaletteId.Cobalt, PaletteId.Violet).forEach { paletteId ->
+            compose.runOnIdle { document = EditorDocument(palette = paletteId, title = "I") }
+            val preview = compose.onNodeWithTag("preview-capture").captureToImage()
+            val export = PosterRenderer().render(document, emptyList(), 1080, 1920)
+            try {
+                copySamples.forEach { (x, y) ->
+                    val contrast = contrastRatio(export.getPixel(x, y), 0xFFFFF8E9.toInt())
+                    assertTrue("$paletteId copy-zone contrast at ($x, $y) is $contrast", contrast >= 4.5)
+                    assertPixelChannelsWithinTolerance(preview, export, x, y, tolerance = 8)
+                }
+            } finally {
+                export.recycle()
+            }
+
+            compose.runOnIdle { document = EditorDocument(palette = paletteId) }
+            val blankPreview = compose.onNodeWithTag("preview-capture").captureToImage()
+            val blankExport = PosterRenderer().render(document, emptyList(), 1080, 1920)
+            try {
+                val blankSample = if (paletteId == PaletteId.Cobalt) 886 to 346 else 990 to 450
+                assertColorChannelsWithinTolerance(
+                    label = "$paletteId blank copy must leave its existing decoration path uncovered",
+                    expected = expectedUndarkenedBackground(paletteId, blankSample.first, blankSample.second),
+                    actual = blankExport.getPixel(blankSample.first, blankSample.second),
+                    tolerance = 1,
+                )
+                assertPixelChannelsWithinTolerance(
+                    preview = blankPreview,
+                    export = blankExport,
+                    exportX = blankSample.first,
+                    exportY = blankSample.second,
+                    tolerance = 8,
+                )
+            } finally {
+                blankExport.recycle()
+            }
+        }
     }
 
     @Test
@@ -309,6 +389,27 @@ class PosterPreviewTest {
             exportBackground.getPixel(exportSampleX, exportSampleY),
             exportStrongShadow.getPixel(exportSampleX, exportSampleY),
         )
+        val frameSampleX = (frame.left + 8f).roundToInt()
+        val frameSampleY = (frame.top + frame.height / 2f).roundToInt()
+        val previewFrameX = (frameSampleX * scale).roundToInt()
+        val previewFrameY = (frameSampleY * scale).roundToInt()
+        val palette = EditorDocument().palette.colors()
+        assertEquals(palette.frameColor, exportStrongShadow.getPixel(frameSampleX, frameSampleY))
+        assertPixelChannelsWithinTolerance(
+            preview = strongShadow,
+            export = exportStrongShadow,
+            exportX = frameSampleX,
+            exportY = frameSampleY,
+            tolerance = 8,
+        )
+        assertPixelChannelsWithinTolerance(
+            preview = strongShadow,
+            export = exportStrongShadow,
+            exportX = exportSampleX,
+            exportY = exportSampleY,
+            tolerance = 8,
+        )
+        assertTrue(strongShadow.toPixelMap()[previewFrameX, previewFrameY].alpha >= 0.99f)
     }
 
     @Test
@@ -430,8 +531,8 @@ class PosterPreviewTest {
             export = rendered
             assertRedDominant(rendered.getPixel(295, 1115), 295, 1115)
             assertGreenDominant(rendered.getPixel(785, 1165), 785, 1165)
-            assertMossFixtureSample(rendered.getPixel(108, 192), 108, 192)
-            assertMossFixtureSample(rendered.getPixel(972, 1728), 972, 1728)
+            assertMintFixtureSample(rendered.getPixel(108, 192), 108, 192)
+            assertMintFixtureSample(rendered.getPixel(972, 1728), 972, 1728)
             listOf(
                 295 to 1115,
                 785 to 1165,
@@ -561,14 +662,14 @@ class PosterPreviewTest {
     }
 
     /**
-     * The unshadowed Moss background at ([x], [y]).
+     * The unshadowed Mint background at ([x], [y]).
      *
      * Derived rather than tabulated: the renderer's gradient runs from (0, 0) to (1080, 1920), so
      * the interpolation factor is the point's projection onto that diagonal. The previous
      * hard-coded triples silently encoded whatever shadow happened to fall on the sample, so
      * moving a frame rebased the "background" expectation instead of failing honestly.
      */
-    private fun assertMossFixtureSample(color: Int, x: Int, y: Int) {
+    private fun assertMintFixtureSample(color: Int, x: Int, y: Int) {
         val red = android.graphics.Color.red(color)
         val green = android.graphics.Color.green(color)
         val blue = android.graphics.Color.blue(color)
@@ -583,12 +684,35 @@ class PosterPreviewTest {
         val expectedBlue = channel(android.graphics.Color::blue)
         val tolerance = 4
         assertTrue(
-            "Export sample ($x, $y) does not match the Moss fixture: " +
+            "Export sample ($x, $y) does not match the Mint fixture: " +
                 "rgba=($red, $green, $blue, ${android.graphics.Color.alpha(color)})",
             abs(red - expectedRed) <= tolerance &&
                 abs(green - expectedGreen) <= tolerance &&
                 abs(blue - expectedBlue) <= tolerance &&
                 android.graphics.Color.alpha(color) >= 250,
+        )
+    }
+
+    private fun assertColorDiffersFromGradient(color: Int, palette: PosterPalette, x: Int, y: Int) {
+        val gradient = expectedGradientColor(palette, x, y)
+        val distance = abs(android.graphics.Color.red(color) - android.graphics.Color.red(gradient)) +
+            abs(android.graphics.Color.green(color) - android.graphics.Color.green(gradient)) +
+            abs(android.graphics.Color.blue(color) - android.graphics.Color.blue(gradient))
+        assertTrue("Decoration missing at ($x, $y): distance=$distance", distance >= 20)
+    }
+
+    private fun expectedGradientColor(palette: PosterPalette, x: Int, y: Int): Int {
+        val progress = ((x * 1080f + y * 1920f) / (1080f * 1080f + 1920f * 1920f))
+            .coerceIn(0f, 1f)
+        fun channel(component: (Int) -> Int): Int {
+            val start = component(palette.startColor)
+            val end = component(palette.endColor)
+            return (start + progress * (end - start)).roundToInt()
+        }
+        return android.graphics.Color.rgb(
+            channel(android.graphics.Color::red),
+            channel(android.graphics.Color::green),
+            channel(android.graphics.Color::blue),
         )
     }
 
@@ -623,5 +747,52 @@ class PosterPreviewTest {
                 abs(previewChannel - exportChannel) <= tolerance,
             )
         }
+    }
+
+    private fun contrastRatio(first: Int, second: Int): Double {
+        val firstLuminance = relativeLuminance(first)
+        val secondLuminance = relativeLuminance(second)
+        return (max(firstLuminance, secondLuminance) + 0.05) /
+            (min(firstLuminance, secondLuminance) + 0.05)
+    }
+
+    private fun relativeLuminance(color: Int): Double {
+        fun component(shift: Int): Double {
+            val encoded = ((color ushr shift) and 0xFF) / 255.0
+            return if (encoded <= 0.04045) encoded / 12.92 else ((encoded + 0.055) / 1.055).pow(2.4)
+        }
+        return 0.2126 * component(16) + 0.7152 * component(8) + 0.0722 * component(0)
+    }
+
+    private fun expectedUndarkenedBackground(paletteId: PaletteId, x: Int, y: Int): Int {
+        val (start, end, sun) = when (paletteId) {
+            PaletteId.Cobalt -> Triple(0xFF3557F0.toInt(), 0xFF78DBEF.toInt(), 0xFFFFF8E9.toInt())
+            PaletteId.Violet -> Triple(0xFF5D50D8.toInt(), 0xFFF3A1C7.toInt(), 0xFFFFD466.toInt())
+            else -> error("Only copy-zone palettes are covered")
+        }
+        val progress = ((x * 1080f + y * 1920f) / (1080f * 1080f + 1920f * 1920f)).coerceIn(0f, 1f)
+        fun gradientChannel(component: (Int) -> Int): Int =
+            (component(start) + progress * (component(end) - component(start))).roundToInt()
+        var red = gradientChannel(android.graphics.Color::red)
+        var green = gradientChannel(android.graphics.Color::green)
+        var blue = gradientChannel(android.graphics.Color::blue)
+        val sunCenterX = 0.82f * 1080f
+        val sunCenterY = 0.18f * 1920f
+        if ((x - sunCenterX) * (x - sunCenterX) + (y - sunCenterY) * (y - sunCenterY) <= 240f * 240f) {
+            val alpha = 176f / 255f
+            red = (android.graphics.Color.red(sun) * alpha + red * (1f - alpha)).roundToInt()
+            green = (android.graphics.Color.green(sun) * alpha + green * (1f - alpha)).roundToInt()
+            blue = (android.graphics.Color.blue(sun) * alpha + blue * (1f - alpha)).roundToInt()
+        }
+        return android.graphics.Color.rgb(red, green, blue)
+    }
+
+    private fun assertColorChannelsWithinTolerance(label: String, expected: Int, actual: Int, tolerance: Int) {
+        val differences = listOf(
+            abs(android.graphics.Color.red(expected) - android.graphics.Color.red(actual)),
+            abs(android.graphics.Color.green(expected) - android.graphics.Color.green(actual)),
+            abs(android.graphics.Color.blue(expected) - android.graphics.Color.blue(actual)),
+        )
+        assertTrue("$label: expected=$expected actual=$actual differences=$differences", differences.all { it <= tolerance })
     }
 }

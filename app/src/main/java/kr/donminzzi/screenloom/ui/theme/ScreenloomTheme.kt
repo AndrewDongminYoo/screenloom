@@ -4,7 +4,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -13,23 +13,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val Ink = Color(0xFF090B10)
-val WarmWhite = Color(0xFFF5F1E8)
-val Cobalt = Color(0xFF5B7CFA)
-val Coral = Color(0xFFFF7A6E)
+val Paper = Color(0xFFFFF8E9)
+val ElevatedPaper = Color(0xFFFFFFFF)
+val Ink = Color(0xFF18213D)
+val MutedInk = Color(0xFF667087)
+val Cobalt = Color(0xFF566EFF)
+val Coral = Color(0xFFFF6B4A)
+val Sun = Color(0xFFFFD466)
+val Mint = Color(0xFF6BD7B3)
+val Outline = Color(0xFFE6DCCB)
+val SelectedWash = Color(0xFFFFF0B9)
 
-private val ScreenloomColors = darkColorScheme(
+private val ScreenloomColors = lightColorScheme(
     primary = Cobalt,
+    onPrimary = Paper,
     secondary = Coral,
-    background = Ink,
-    surface = Color(0xFF151922),
-    surfaceVariant = Color(0xFF202633),
-    onPrimary = Ink,
     onSecondary = Ink,
-    onBackground = WarmWhite,
-    onSurface = WarmWhite,
-    onSurfaceVariant = Color(0xFFBCC3D2),
-    outline = Color(0xFF353C4B),
+    tertiary = Sun,
+    onTertiary = Ink,
+    background = Paper,
+    onBackground = Ink,
+    surface = ElevatedPaper,
+    onSurface = Ink,
+    surfaceVariant = Color(0xFFF7F4ED),
+    onSurfaceVariant = MutedInk,
+    outline = Outline,
 )
 
 private val ScreenloomTypography = Typography(

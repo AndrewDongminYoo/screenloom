@@ -27,7 +27,7 @@ The first release is a complete paid-download product with no accounts, ads, ana
 
 ### Empty State
 
-The app opens on a dark, editorial workspace with the Screenloom wordmark, a short explanation, and one primary action labeled `Choose screenshots`.
+The app opens on the sunlit editorial workspace defined in [Screenloom Sunlit Editorial Design](./2026-08-13-screenloom-sunlit-editorial-design.md), with the Screenloom wordmark, a short explanation, and one primary action labeled `Choose screenshots`.
 A sample poster behind the action communicates the result before the user imports anything.
 The system photo picker accepts one or two images.
 
@@ -54,8 +54,9 @@ A failed or cancelled export leaves the editor unchanged and never discards the 
 
 ## Visual Direction
 
-The interface uses a near-black ink background, warm off-white typography, cobalt and coral accent colors, rounded glass-like control surfaces, and restrained motion.
-The poster presets use high-contrast gradients that remain legible behind both light and dark screenshots.
+The original dark editorial direction is superseded by [Screenloom Sunlit Editorial Design](./2026-08-13-screenloom-sunlit-editorial-design.md).
+The interface now uses a warm paper canvas, deep ink typography, fixed coral and cobalt roles, crossing color ribbons, light control surfaces, and restrained motion.
+The poster presets use bright or high-chroma palettes with explicit foreground colors that remain legible behind both light and dark screenshots.
 Transitions use short fades and spring-based position changes, while export shows a subtle progress treatment instead of a blocking dialog.
 The app avoids decorative effects that obscure controls or make the exported result look like a template demo.
 

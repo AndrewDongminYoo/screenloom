@@ -147,7 +147,7 @@ class PosterRendererTest {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             this.textSize = textSize
             typeface = Typeface.create(
-                Typeface.DEFAULT,
+                if (textSize == 78f) Typeface.SERIF else Typeface.DEFAULT,
                 if (textSize == 78f) Typeface.BOLD else Typeface.NORMAL,
             )
         }

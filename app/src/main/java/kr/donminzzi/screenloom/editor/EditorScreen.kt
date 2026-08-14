@@ -43,11 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +58,11 @@ import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.render.PosterPreview
 import kr.donminzzi.screenloom.ui.theme.Cobalt
 import kr.donminzzi.screenloom.ui.theme.Coral
+import kr.donminzzi.screenloom.ui.theme.ElevatedPaper
+import kr.donminzzi.screenloom.ui.theme.Ink
+import kr.donminzzi.screenloom.ui.theme.Outline
+import kr.donminzzi.screenloom.ui.theme.Sun
+import androidx.compose.ui.graphics.drawscope.rotate
 
 @Composable
 fun EditorScreen(
@@ -118,9 +126,9 @@ private fun EmptyState(
         Surface(
             modifier = Modifier
                 .width(166.dp)
-                .shadow(32.dp, RoundedCornerShape(28.dp)),
+                .shadow(32.dp, MaterialTheme.shapes.large),
             color = Color.Transparent,
-            shape = RoundedCornerShape(28.dp),
+            shape = MaterialTheme.shapes.large,
         ) {
             PosterPreview(
                 document = EditorDocument(
@@ -128,13 +136,13 @@ private fun EmptyState(
                     layout = LayoutMode.Stack,
                     title = stringResource(R.string.sample_poster_title),
                     subtitle = stringResource(R.string.sample_poster_subtitle),
-                    palette = PaletteId.Coral,
+                    palette = PaletteId.Ink,
                 ),
                 images = sampleImages,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(28.dp))
-                    .clip(RoundedCornerShape(28.dp)),
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), MaterialTheme.shapes.large)
+                    .clip(MaterialTheme.shapes.large),
             )
         }
         Spacer(Modifier.height(22.dp))
@@ -160,17 +168,26 @@ private fun EmptyState(
                 .heightIn(min = 56.dp),
             enabled = !isImporting,
             shape = RoundedCornerShape(18.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            ),
         ) {
             if (isImporting) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = MaterialTheme.colorScheme.onSecondary,
                     strokeWidth = 2.dp,
                 )
                 Spacer(Modifier.size(10.dp))
                 Text(stringResource(R.string.importing))
             } else {
                 Text(stringResource(R.string.choose_screenshots))
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.action_forward),
+                    modifier = Modifier.clearAndSetSemantics { },
+                )
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -199,7 +216,7 @@ private fun EditorWorkspace(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         StudioHeader(
@@ -207,25 +224,39 @@ private fun EditorWorkspace(
                 if (state.images.size == 1) R.string.one_frame_loaded else R.string.two_frames_loaded,
             ),
         )
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(10.dp))
+        val stageShape = MaterialTheme.shapes.large
         Surface(
             modifier = Modifier
-                .widthIn(max = 246.dp)
-                .fillMaxWidth(0.68f)
-                .shadow(26.dp, RoundedCornerShape(24.dp)),
-            color = Color.Transparent,
-            shape = RoundedCornerShape(24.dp),
+                .fillMaxWidth()
+                .shadow(
+                    elevation = 18.dp,
+                    shape = stageShape,
+                    ambientColor = Ink.copy(alpha = 0.10f),
+                    spotColor = Ink.copy(alpha = 0.12f),
+                ),
+            color = ElevatedPaper,
+            shape = stageShape,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Outline),
         ) {
-            PosterPreview(
-                document = state.document,
-                images = previewImages,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(24.dp))
-                    .clip(RoundedCornerShape(24.dp)),
-            )
+                    .padding(vertical = 18.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                PreviewStageBackdrop()
+                PosterPreview(
+                    document = state.document,
+                    images = previewImages,
+                    modifier = Modifier
+                        .fillMaxWidth(0.62f)
+                        .widthIn(max = 220.dp)
+                        .clip(RoundedCornerShape(24.dp)),
+                )
+            }
         }
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(12.dp))
         EditorControls(
             document = state.document,
             enabled = editorEnabled,
@@ -266,7 +297,10 @@ private fun EditorWorkspace(
                 .heightIn(min = 58.dp),
             enabled = editorEnabled,
             shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            ),
         ) {
             if (state.isExporting) {
                 CircularProgressIndicator(
@@ -278,6 +312,11 @@ private fun EditorWorkspace(
                 Text(stringResource(R.string.exporting))
             } else {
                 Text(stringResource(R.string.export_png))
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.action_forward),
+                    modifier = Modifier.clearAndSetSemantics { },
+                )
             }
         }
         Spacer(Modifier.height(20.dp))
@@ -298,7 +337,7 @@ private fun StudioHeader(sequence: String) {
         Spacer(Modifier.weight(1f))
         Text(
             text = sequence,
-            color = MaterialTheme.colorScheme.secondary,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 9.sp,
                 letterSpacing = 0.8.sp,
@@ -311,33 +350,58 @@ private fun StudioHeader(sequence: String) {
 @Composable
 private fun StudioBackdrop() {
     ComposeCanvas(modifier = Modifier.fillMaxSize()) {
-        val lineColor = Color.White.copy(alpha = 0.025f)
-        val step = size.width / 6f
-        repeat(12) { index ->
-            val x = (index - 3) * step
-            drawLine(
-                color = lineColor,
-                start = Offset(x, 0f),
-                end = Offset(x + size.height * 0.28f, size.height),
-                strokeWidth = 1f,
+        rotate(-12f, pivot = Offset(size.width * 0.78f, size.height * 0.11f)) {
+            drawRoundRect(
+                color = Cobalt.copy(alpha = 0.13f),
+                topLeft = Offset(size.width * 0.34f, size.height * 0.045f),
+                size = Size(size.width * 0.96f, size.height * 0.075f),
+                cornerRadius = CornerRadius(size.height * 0.04f),
             )
         }
-        drawCircle(
-            color = Cobalt.copy(alpha = 0.07f),
-            radius = size.width * 0.48f,
-            center = Offset(size.width * 1.02f, size.height * 0.08f),
-        )
-        drawCircle(
-            color = Coral.copy(alpha = 0.045f),
-            radius = size.width * 0.4f,
-            center = Offset(-size.width * 0.08f, size.height * 0.72f),
-        )
+        rotate(13f, pivot = Offset(size.width * 0.18f, size.height * 0.76f)) {
+            drawRoundRect(
+                color = Coral.copy(alpha = 0.12f),
+                topLeft = Offset(-size.width * 0.48f, size.height * 0.71f),
+                size = Size(size.width * 0.98f, size.height * 0.07f),
+                cornerRadius = CornerRadius(size.height * 0.04f),
+            )
+        }
+        rotate(-10f, pivot = Offset(size.width * 0.5f, size.height * 0.92f)) {
+            drawRoundRect(
+                color = Sun.copy(alpha = 0.18f),
+                topLeft = Offset(-size.width * 0.1f, size.height * 0.89f),
+                size = Size(size.width * 1.2f, size.height * 0.055f),
+                cornerRadius = CornerRadius(size.height * 0.03f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewStageBackdrop() {
+    ComposeCanvas(Modifier.fillMaxSize()) {
+        rotate(-11f, pivot = center) {
+            drawRoundRect(
+                color = Cobalt.copy(alpha = 0.15f),
+                topLeft = Offset(-size.width * 0.08f, size.height * 0.18f),
+                size = Size(size.width * 1.16f, size.height * 0.18f),
+                cornerRadius = CornerRadius(size.height * 0.1f),
+            )
+        }
+        rotate(12f, pivot = center) {
+            drawRoundRect(
+                color = Sun.copy(alpha = 0.24f),
+                topLeft = Offset(-size.width * 0.08f, size.height * 0.66f),
+                size = Size(size.width * 1.16f, size.height * 0.15f),
+                cornerRadius = CornerRadius(size.height * 0.08f),
+            )
+        }
     }
 }
 
 private fun createSampleImages(): List<ImageBitmap> = listOf(
-    createSampleImage(AndroidColor.rgb(91, 124, 250), AndroidColor.rgb(20, 24, 42)),
-    createSampleImage(AndroidColor.rgb(255, 122, 110), AndroidColor.rgb(44, 22, 34)),
+    createSampleImage(AndroidColor.rgb(86, 110, 255), AndroidColor.rgb(24, 33, 61)),
+    createSampleImage(AndroidColor.rgb(255, 107, 74), AndroidColor.rgb(107, 215, 179)),
 )
 
 private fun createSampleImage(startColor: Int, endColor: Int): ImageBitmap {
