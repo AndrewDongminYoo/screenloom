@@ -46,7 +46,7 @@ class PosterRendererTest {
     }
 
     @Test
-    fun exporterWritesDecodablePng() = runBlocking {
+    fun exporterWritesOpaqueTruecolorPngAtExactDimensions() = runBlocking {
         val bytes = ByteArrayOutputStream()
         val source = Bitmap.createBitmap(320, 640, Bitmap.Config.ARGB_8888)
         val exporter = PosterExporter(PosterRenderer(), OutputStreamProvider { bytes })
@@ -59,6 +59,8 @@ class PosterRendererTest {
 
         assertEquals(ExportResult.Success, result)
         val encoded = bytes.toByteArray()
+        assertEquals(8, encoded[24].toInt() and 0xFF)
+        assertEquals(2, encoded[25].toInt() and 0xFF)
         val decoded = BitmapFactory.decodeByteArray(encoded, 0, encoded.size)
         assertEquals(1080, decoded.width)
         assertEquals(1920, decoded.height)
