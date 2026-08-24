@@ -5,15 +5,15 @@
 - JDK 17.
 - Android SDK at `/Volumes/dongminyu/Android/sdk`.
 - Compile and target SDK 36.
-- Instrumented test AVD `flutter_emulator_2`, API 34, 1080 by 1920, run headless (see below). `flutter_emulator` is the same image but is often in use by another project.
+- Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920, run headless (see below).
 
 ## Emulator
 
-Instrumented runs use a dedicated low-memory headless AVD so they cannot contend with an emulator another project is already using.
+Instrumented runs use the low-memory headless `flutter_emulator` AVD.
 Booting a second instance of the same AVD is refused outright (`Running multiple emulators with the same AVD is an experimental feature`), and without `ANDROID_SERIAL` Gradle installs and runs on **every** attached device.
 
 ```bash
-$ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator_2 \
+$ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator \
   -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim \
   -no-snapshot-load -no-snapshot-save -memory 2048 -cores 2 -port 5556 &
 adb -s emulator-5556 wait-for-device
@@ -24,7 +24,7 @@ ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew conne
 Dropping it once left the instance stuck at `offline` for 16 minutes with a live qemu process; the same AVD booted in 30 seconds with the flag restored.
 `-no-snapshot-load` keeps a stale snapshot from being restored into that same state.
 
-`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator_2`.
+`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator`.
 On a freshly booted AVD the system photo picker keeps its own index, so pushed images show as "No photos or videos" until the media provider is restarted:
 
 ```bash
@@ -46,12 +46,10 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
 Unit tests protect editor normalization and deterministic layout geometry.
 
 > [!IMPORTANT]
-> The connected suite requires an **English** locale, which is not the same thing as the device's default one.
-> `EditorScreenTest` looks nodes up by 25 hard-coded English strings, so any Korean locale in effect fails 9 of them, whether it arrives as the device default or as a per-app override.
-> The six labels carrying `translatable="false"` still match; the translated ones do not.
+> `EditorScreenTest` resolves translated selectors from the same active resources as the UI and includes explicit Korean-locale coverage for the empty-state action and dynamic preview description.
+> The connected suite does not require the emulator to be forced to English.
 
-Clearing a per-app override restores the device default, so the device default has to be English too.
-Inspect and clear the override before running the gate:
+Inspect the per-app override when diagnosing a locale-specific failure, and clear it only when the test scenario requires the device default:
 
 ```bash
 adb -s emulator-5556 shell cmd locale get-app-locales kr.donminzzi.screenloom
@@ -62,12 +60,14 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-13 against the headless API 34 `flutter_emulator_2` AVD at 1080 by 1920, on the audit-remediation branch, after screenshot frames were made aspect-aware.
-The result contained 28 passing unit tests and 42 passing instrumented tests with zero failures, errors, or skips.
+The automated gate was last run on 2026-08-24 against the headless API 34 `flutter_emulator` AVD at 1080 by 1920, on the `fix/product-readiness` branch.
+The result contained 31 passing unit tests and 49 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
+The complete 49-test instrumented suite passed in separate English-default and `ko-KR` per-app locale runs.
 
-The debug APK SHA-256 for that run is `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
+The debug APK SHA-256 for that run is `e2f11d3c659e28fda1896716726dfde28e2ad01267e19b8ca6755493d7771f94`.
 
+The 2026-08-13 automated baseline, for reference, was 28 unit and 42 instrumented tests against APK SHA-256 `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
 ## Manifest Privacy Boundary
@@ -102,15 +102,40 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 4. Change title, subtitle, palette, frame, shadow, and layout and confirm the preview updates immediately.
 5. Cancel import and export and confirm the active composition remains intact.
 6. Rotate the emulator and confirm the active composition survives while the process remains alive.
-7. Export a PNG, reopen it, and confirm its dimensions are 1080 by 1920 pixels.
+7. Export a PNG, reopen it, and confirm it is an opaque 8-bit truecolor RGB image with dimensions of 1080 by 1920 pixels.
+
+Inspect the exported artifact itself rather than relying on successful bitmap decoding:
+
+```bash
+file <exported-png>
+sips -g pixelWidth -g pixelHeight <exported-png>
+```
+
+The `file` result must report `8-bit/color RGB`, not `RGBA`, and `sips` must report a pixel width of 1080 and a pixel height of 1920.
 
 ## Manual Smoke Result
+
+### 2026-08-24, product-readiness improvements
+
+All seven scenarios were driven through `adb`, system Photo Picker, system Create Document, and Google Photos against debug APK SHA-256 `e2f11d3c659e28fda1896716726dfde28e2ad01267e19b8ca6755493d7771f94` on the API 34 `flutter_emulator` AVD.
+
+1. A clean install launched Screenloom with no permission dialog, no runtime permission, and only the AndroidX signature-protected application permission in the package declaration.
+2. A one-image import exposed `Focus` and `Stack`, kept the nearest clickable `Split` ancestor disabled, accepted title and subtitle edits, and exported `one-image.png` successfully.
+3. Replacing the selection with two images changed the preview summary to two screenshots and made the nearest clickable `Split` ancestor enabled.
+4. Title, subtitle, `Split`, device frame, `Coral`, and `Strong` each updated the active composition; layout, frame, palette, and shadow actions each produced a different fixed-position screen pixel hash.
+5. Backing out of Photo Picker and Create Document returned to the same title, subtitle, layout, image count, and palette.
+6. Rotating to landscape and back preserved the two-image `Split` composition, `Coral` palette, title, and subtitle while the process remained alive.
+7. Google Photos reopened `ship-faster.png`; the pulled artifact was a 316,977-byte, non-interlaced `8-bit/color RGB` PNG at exactly 1080 by 1920 pixels with SHA-256 `9b88d99e5b3ecfe155051311de22b5af3e865b959981909e2a18fe7cb3d79cf9`.
+   The one-image export was also `8-bit/color RGB` at exactly 1080 by 1920 pixels with SHA-256 `f76478af7ea1852a14fdb385401736865243484982bc0984f1f8c48ad3a82750`.
+
+This run does not establish TalkBack reading order, switch announcements, or gesture navigation.
+Those assistive-technology checks remain explicit manual follow-up in GitHub issue #9.
 
 ### 2026-08-13, post code-review fixes
 
 > [!WARNING]
-> This run predates the audit-remediation work and its APK is **not** the one in the baseline above.
-> Serialized imports and the animated preview placements landed afterwards and are user-visible, so the seven scenarios need another pass before release.
+> This run predates the current product-readiness baseline and its APK is **not** the one in the baseline above.
+> Use the 2026-08-24 result as the current seven-scenario manual gate.
 
 All seven scenarios were re-run against APK SHA-256 `61a31e3783b9628923244714b0b0d9c90152cc836c908be20eb03345bd9d8a91` on the API 34 `flutter_emulator` AVD, **driven through `adb` and `uiautomator` rather than by hand**.
 
