@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sample_poster_title">출시한 앱처럼\n보이게.</string>
+    <string name="sample_poster_subtitle">스크린샷에서 스토어까지.</string>
+    <string name="empty_headline">홍보 이미지,\n몇 초 만에.</string>
+    <string name="empty_body">스크린샷을 한 장 또는 두 장 선택하세요. 이 기기 안에서 바로 9:16 홍보 포스터로 만들어 드립니다.</string>
+    <string name="choose_screenshots">스크린샷 선택</string>
+    <string name="importing">가져오는 중…</string>
+    <string name="privacy_note">설계부터 오프라인입니다. 스크린샷은 이 기기를 벗어나지 않습니다.</string>
+    <string name="poster_preview_description">홍보 포스터 미리보기</string>
+    <string name="tab_layout">레이아웃</string>
+    <string name="tab_copy">문구</string>
+    <string name="tab_style">스타일</string>
+    <string name="layout_hint">Focus는 한 장을 강조합니다. Stack과 Split은 두 번째 화면까지 이야기에 넣습니다.</string>
+    <string name="split_unavailable">Split을 사용하려면 스크린샷을 한 장 더 추가하세요</string>
+    <string name="title_label">제목</string>
+    <string name="subtitle_label">부제</string>
+    <string name="device_frame">기기 프레임</string>
+    <string name="device_frame_hint">각 스크린샷에 은은한 테두리를 더합니다.</string>
+    <string name="shadow_soft">약하게</string>
+    <string name="shadow_medium">보통</string>
+    <string name="shadow_strong">강하게</string>
+    <string name="replace">다시 선택</string>
+    <string name="reset">초기화</string>
+    <string name="export_png">PNG 내보내기</string>
+    <string name="exporting">내보내는 중…</string>
+    <string name="import_failure">이미지를 읽을 수 없습니다</string>
+    <string name="empty_export">스크린샷을 먼저 선택하세요</string>
+    <string name="export_success">PNG를 저장했습니다</string>
+    <string name="export_failure">PNG를 저장하지 못했습니다</string>
+</resources>
