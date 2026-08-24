@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.LocalDensity
@@ -231,9 +232,26 @@ class PosterPreviewTest {
         val previewSubtitleOffset = previewSubtitleTop - previewFirstLineTop
         val exportSubtitleOffset = exportSubtitleTop - exportFirstLineTop
 
+        // Absolute row agreement is the property that matters and it is the tighter check: the
+        // preview quantises each ink-top to its own 709 px grid, so a single row is worth about
+        // 1.5 reference units. Every row below was measured within 1.0 after the copy block moved
+        // onto explicit baselines.
+        listOf(
+            "first line" to (previewFirstLineTop to exportFirstLineTop),
+            "second line" to (previewSecondLineTop to exportSecondLineTop),
+            "subtitle" to (previewSubtitleTop to exportSubtitleTop),
+        ).forEach { (label, rows) ->
+            val (previewRow, exportRow) = rows
+            assertTrue(
+                "Preview $label row is $previewRow but export row is $exportRow",
+                abs(previewRow - exportRow) <= 2f,
+            )
+        }
+        // The two checks below subtract one quantised row from another, so they carry twice the
+        // preview's rounding. They stay as structural checks; the absolute rows above are the gate.
         assertTrue(
             "Preview line spacing is $previewLineSpacing but export spacing is $exportLineSpacing",
-            abs(previewLineSpacing - exportLineSpacing) <= 2f,
+            abs(previewLineSpacing - exportLineSpacing) <= 3f,
         )
         assertTrue(
             "Preview rows are $previewFirstLineTop, $previewSecondLineTop, $previewSubtitleTop " +
@@ -794,5 +812,108 @@ class PosterPreviewTest {
             abs(android.graphics.Color.blue(expected) - android.graphics.Color.blue(actual)),
         )
         assertTrue("$label: expected=$expected actual=$actual differences=$differences", differences.all { it <= tolerance })
+    }
+
+    @Test
+    fun copyBlockLandsAtTheSameHeightInPreviewAndExportForEveryScript() {
+        // Latin already agrees; Hangul reaches the copy block through a fallback face, and the
+        // export path's line boxes do not follow that fallback while the preview's do.
+        var document by mutableStateOf(EditorDocument())
+        compose.setContent {
+            Box(Modifier.width(270.dp).testTag("preview-capture")) {
+                PosterPreview(document = document, images = emptyList())
+            }
+        }
+        listOf(
+            "latin" to EditorDocument(
+                title = "MAKE IT\nLOOK LAUNCHED.",
+                subtitle = "From screenshot to storefront.",
+            ),
+            "hangul" to EditorDocument(
+                title = "출시한 앱처럼\n보이게.",
+                subtitle = "스크린샷에서 스토어까지.",
+            ),
+            // A 60-code-point title overflows two lines at 78 units across a 900-unit measure, so
+            // this case runs the ellipsised path that drawPosterCopy still delegates to
+            // StaticLayout.draw.
+            "overflowing" to EditorDocument(
+                title = "Launch your app with visuals that look designed not exported",
+                subtitle = "Every promotional frame, straight from the screenshots you already have.",
+            ),
+        ).forEach { (script, candidate) ->
+            compose.runOnIdle { document = candidate }
+            compose.waitForIdle()
+            val preview = compose.onNodeWithTag("preview-capture").captureToImage()
+            val export = PosterRenderer().render(candidate, emptyList(), 1080, 1920)
+            try {
+                val previewBox = normalizedCopyInkBox(preview.toPixelMap(), preview.width, preview.height)
+                val exportBox = normalizedCopyInkBox(export)
+                listOf(
+                    "top" to abs(previewBox.first - exportBox.first),
+                    "bottom" to abs(previewBox.second - exportBox.second),
+                ).forEach { (edge, difference) ->
+                    assertTrue(
+                        "$script copy block $edge differs by $difference of poster height " +
+                            "(preview $previewBox, export $exportBox)",
+                        difference <= COPY_BLOCK_PARITY_TOLERANCE,
+                    )
+                }
+            } finally {
+                export.recycle()
+            }
+        }
+    }
+
+    /** Normalized top and bottom of the dark copy ink in the upper band, so both scales compare. */
+    private fun normalizedCopyInkBox(bitmap: Bitmap): Pair<Float, Float> {
+        var minY = bitmap.height
+        var maxY = -1
+        val bandBottom = (bitmap.height * COPY_BLOCK_BAND_FRACTION).toInt()
+        for (y in 0 until bandBottom) {
+            for (x in 0 until bitmap.width) {
+                if (isCopyInk(bitmap.getPixel(x, y))) {
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+                }
+            }
+        }
+        assertTrue("no copy ink found in the upper band", maxY >= 0)
+        return minY.toFloat() / bitmap.height to maxY.toFloat() / bitmap.height
+    }
+
+    private fun normalizedCopyInkBox(
+        pixels: androidx.compose.ui.graphics.PixelMap,
+        width: Int,
+        height: Int,
+    ): Pair<Float, Float> {
+        var minY = height
+        var maxY = -1
+        val bandBottom = (height * COPY_BLOCK_BAND_FRACTION).toInt()
+        for (y in 0 until bandBottom) {
+            for (x in 0 until width) {
+                if (isCopyInk(pixels[x, y].toArgb())) {
+                    if (y < minY) minY = y
+                    if (y > maxY) maxY = y
+                }
+            }
+        }
+        assertTrue("no copy ink found in the upper band", maxY >= 0)
+        return minY.toFloat() / height to maxY.toFloat() / height
+    }
+
+    private fun isCopyInk(pixel: Int): Boolean {
+        val luminance = (
+            android.graphics.Color.red(pixel) +
+                android.graphics.Color.green(pixel) +
+                android.graphics.Color.blue(pixel)
+            ) / 3
+        return luminance < COPY_INK_MAX_LUMINANCE
+    }
+
+    private companion object {
+        /** Latin agrees within 0.0015 today; Hangul diverges by 0.0092 and 0.0151. */
+        const val COPY_BLOCK_PARITY_TOLERANCE = 0.004f
+        const val COPY_BLOCK_BAND_FRACTION = 0.30f
+        const val COPY_INK_MAX_LUMINANCE = 110
     }
 }

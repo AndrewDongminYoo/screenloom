@@ -56,8 +56,8 @@ None of that is installed here and the repository convention above wins — do n
 This is the repository's main hazard.
 Two independent renderers must produce the same poster:
 
-- `render/PosterPreview.kt` — Compose `DrawScope`, draws the live preview, title and subtitle as real `Text` composables.
-- `render/PosterRenderer.kt` — `android.graphics.Canvas`, draws the exported bitmap, title and subtitle as `StaticLayout`.
+- `render/PosterPreview.kt` — Compose `DrawScope`, draws the live preview.
+- `render/PosterRenderer.kt` — `android.graphics.Canvas`, draws the exported bitmap.
 
 Both scale every dimension from the same 1080x1920 reference, but they share only:
 
@@ -65,9 +65,12 @@ Both scale every dimension from the same 1080x1920 reference, but they share onl
 - `PosterLayout.imagePlacements()` — the same rectangles paired with the source image index, which is where the `Stack` back-to-front reversal now lives. Both renderers call this rather than reversing the list themselves. It also takes each source's aspect ratio and shrinks the template box to the largest rectangle of that ratio, centred: the templates are fixed shapes but imported screenshots are not, and a 9:16 capture used to lose 24% of its width to `Split`'s 0.427 box. Pass real ratios — `centerCrop` in both renderers is now only a safety net.
 - `PaletteId.colors()` — the six gradients.
 - `ShadowLevel.posterShadowSpec()`, `POSTER_SHADOW_LAYER_COUNT`, `POSTER_TITLE_LINE_HEIGHT`, `POSTER_SUBTITLE_LINE_HEIGHT`.
+- `drawPosterCopy()` in `PosterRenderer.kt` — the whole copy block, title and subtitle. The preview calls it through `drawIntoCanvas`, so there is one implementation rather than two.
+  It lays the text out in 1080-wide reference units and scales the canvas, and it pins every line onto a baseline computed from `POSTER_TITLE_FIRST_BASELINE` / `POSTER_SUBTITLE_FIRST_BASELINE` / `POSTER_COPY_BASELINE_GAP` instead of letting font metrics position the line boxes.
+  That is not stylistic. Hangul reaches the block through a fallback face, and while the preview's line boxes followed that face the export's did not, so the two disagreed by 18-29 px at 1080x1920 while agreeing within 3 px on Latin. `PosterPreviewTest.copyBlockLandsAtTheSameHeightInPreviewAndExportForEveryScript` pins it.
 - `POSTER_SUBTITLE_ALPHA`, `POSTER_GLOW_ALPHA`, `POSTER_TEXTURE_ALPHA` — declared 0-255; the preview divides by `255f`. Never hand-convert a new alpha, add a constant.
 
-Everything else is duplicated as literals in both files: the background gradient, the accent-glow and dot-grid geometry, the copy-block geometry (`90f` inset, `150f` top, `78f` title, `32f` subtitle, `22f` gap), the `42f` corner radius, the `16f` frame inset, and `centerCrop`.
+Everything else is duplicated as literals in both files: the background gradient, the accent-glow and dot-grid geometry, the `42f` corner radius, the `16f` frame inset, and `centerCrop`.
 
 The preview additionally animates placements through `updateTransition`; the export does not.
 That is deliberate, and it is only safe because every animation converges on the same `imagePlacements()` values — at rest the two renderers agree, which `PosterPreviewTest.splitPreviewMatchesRepresentativeExportPixels` pins.
