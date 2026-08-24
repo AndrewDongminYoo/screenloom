@@ -94,10 +94,14 @@ fun PosterPreview(
             PaletteId.Sunrise -> R.string.palette_sunrise
         },
     )
+    val visibleImageCount = PosterLayout.visibleImageCount(
+        layout = document.layout,
+        selectedCount = images.size,
+    )
     val screenshotCount = pluralStringResource(
         R.plurals.poster_preview_screenshot_count,
-        images.size,
-        images.size,
+        visibleImageCount,
+        visibleImageCount,
     )
     val previewDescription = stringResource(
         R.string.poster_preview_description,

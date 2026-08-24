@@ -20,21 +20,32 @@ object PosterLayout {
     private const val ExportWidth = 1080f
     private const val ExportHeight = 1920f
 
+    internal fun visibleImageCount(
+        layout: LayoutMode,
+        selectedCount: Int,
+    ): Int = when (layout) {
+        LayoutMode.Focus -> selectedCount.coerceIn(0, 1)
+        LayoutMode.Stack,
+        LayoutMode.Split,
+        -> selectedCount.coerceIn(0, 2)
+    }
+
     fun placements(
         canvasSize: IntSize,
         layout: LayoutMode,
         imageCount: Int,
     ): List<PosterPlacement> {
-        if (canvasSize.width <= 0 || canvasSize.height <= 0 || imageCount <= 0) return emptyList()
+        val visibleImageCount = visibleImageCount(layout, imageCount)
+        if (canvasSize.width <= 0 || canvasSize.height <= 0 || visibleImageCount == 0) return emptyList()
 
         val source = when (layout) {
             LayoutMode.Focus -> listOf(focusPlacement)
-            LayoutMode.Stack -> if (imageCount >= 2) stackPlacements else listOf(stackPlacements.last())
-            LayoutMode.Split -> if (imageCount >= 2) splitPlacements else listOf(focusPlacement)
+            LayoutMode.Stack -> if (visibleImageCount == 2) stackPlacements else listOf(stackPlacements.last())
+            LayoutMode.Split -> if (visibleImageCount == 2) splitPlacements else listOf(focusPlacement)
         }
         val scaleX = canvasSize.width / ExportWidth
         val scaleY = canvasSize.height / ExportHeight
-        return source.take(imageCount.coerceAtMost(2)).map { placement ->
+        return source.take(visibleImageCount).map { placement ->
             placement.copy(
                 left = placement.left * scaleX,
                 top = placement.top * scaleY,

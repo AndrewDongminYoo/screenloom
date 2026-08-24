@@ -1,5 +1,6 @@
 package kr.donminzzi.screenloom.render
 
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -13,6 +14,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
@@ -31,6 +34,7 @@ import kr.donminzzi.screenloom.editor.LayoutMode
 import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import androidx.compose.ui.unit.IntSize
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -78,6 +82,16 @@ class PosterPreviewTest {
         } finally {
             sources.forEach(Bitmap::recycle)
         }
+    }
+
+    @Test
+    fun focusWithTwoSelectedImagesDescribesOneVisibleScreenshot() {
+        assertFocusDescription(Locale.US)
+    }
+
+    @Test
+    fun koreanFocusWithTwoSelectedImagesDescribesOneVisibleScreenshot() {
+        assertFocusDescription(Locale.forLanguageTag("ko-KR"))
     }
 
     @Test
@@ -928,5 +942,43 @@ class PosterPreviewTest {
         const val COPY_BLOCK_PARITY_TOLERANCE = 0.004f
         const val COPY_BLOCK_BAND_FRACTION = 0.30f
         const val COPY_INK_MAX_LUMINANCE = 110
+    }
+
+    private fun assertFocusDescription(locale: Locale) {
+        val configuration = Configuration(
+            InstrumentationRegistry.getInstrumentation().targetContext.resources.configuration,
+        ).apply {
+            setLocale(locale)
+        }
+        val localizedContext = InstrumentationRegistry.getInstrumentation().targetContext
+            .createConfigurationContext(configuration)
+        val sources = List(2) { Bitmap.createBitmap(20, 40, Bitmap.Config.ARGB_8888) }
+        try {
+            compose.setContent {
+                CompositionLocalProvider(
+                    LocalContext provides localizedContext,
+                    LocalConfiguration provides configuration,
+                ) {
+                    PosterPreview(
+                        document = EditorDocument(imageCount = 2, layout = LayoutMode.Focus),
+                        images = sources.map(Bitmap::asImageBitmap),
+                    )
+                }
+            }
+
+            val previewDescription = localizedContext.getString(
+                R.string.poster_preview_description,
+                localizedContext.getString(R.string.layout_focus),
+                localizedContext.resources.getQuantityString(
+                    R.plurals.poster_preview_screenshot_count,
+                    1,
+                    1,
+                ),
+                localizedContext.getString(R.string.palette_ink),
+            )
+            compose.onNodeWithContentDescription(previewDescription).assertIsDisplayed()
+        } finally {
+            sources.forEach(Bitmap::recycle)
+        }
     }
 }
