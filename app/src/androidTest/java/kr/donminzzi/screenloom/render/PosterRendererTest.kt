@@ -21,6 +21,7 @@ import java.io.IOException
 import java.io.OutputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -46,7 +47,7 @@ class PosterRendererTest {
     }
 
     @Test
-    fun exporterWritesDecodablePng() = runBlocking {
+    fun exporterWritesOpaqueTruecolorPngAtExactDimensions() = runBlocking {
         val bytes = ByteArrayOutputStream()
         val source = Bitmap.createBitmap(320, 640, Bitmap.Config.ARGB_8888)
         val exporter = PosterExporter(PosterRenderer(), OutputStreamProvider { bytes })
@@ -59,6 +60,14 @@ class PosterRendererTest {
 
         assertEquals(ExportResult.Success, result)
         val encoded = bytes.toByteArray()
+        assertTrue("Expected a complete PNG IHDR header", encoded.size >= 26)
+        assertArrayEquals(
+            byteArrayOf(0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A),
+            encoded.copyOfRange(0, 8),
+        )
+        assertEquals("IHDR", String(encoded, 12, 4, Charsets.US_ASCII))
+        assertEquals(8, encoded[24].toInt() and 0xFF)
+        assertEquals(2, encoded[25].toInt() and 0xFF)
         val decoded = BitmapFactory.decodeByteArray(encoded, 0, encoded.size)
         assertEquals(1080, decoded.width)
         assertEquals(1920, decoded.height)

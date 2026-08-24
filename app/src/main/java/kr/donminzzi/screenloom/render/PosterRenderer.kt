@@ -184,7 +184,7 @@ class PosterRenderer {
         height: Int,
     ): Bitmap {
         require(width > 0 && height > 0) { "Poster dimensions must be positive" }
-        val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888, false)
         val canvas = Canvas(output)
         val scale = width / 1080f
         val palette = document.palette.colors()
