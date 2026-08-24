@@ -44,6 +44,13 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
 ```
 
 Unit tests protect editor normalization and deterministic layout geometry.
+
+> [!IMPORTANT]
+> Run the connected suite in the device's default locale.
+> `EditorScreenTest` looks nodes up by 25 hard-coded English strings, so a per-app Korean locale left on the device (`cmd locale set-app-locales kr.donminzzi.screenloom --locales ko-KR`) fails 9 of them.
+> The six labels carrying `translatable="false"` still match; the translated ones do not.
+> Clear it with `--locales ''` before running the gate.
+
 Instrumented tests protect Android image decoding, bitmap export, ViewModel coordination, and Compose semantics.
 
 ## Verified Baseline

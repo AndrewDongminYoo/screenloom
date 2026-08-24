@@ -7,13 +7,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -22,22 +18,17 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.Density
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
@@ -159,14 +150,6 @@ fun PosterPreview(
         }
         val animatedImagesByIndex = animatedImages.associateBy { it.imageIndex }
         val palette = document.palette.colors()
-        val posterDensity = Density(LocalDensity.current.density, fontScale = 1f)
-        val horizontalPadding = (maxWidth.value * 90f / 1080f).dp
-        val topPadding = (maxWidth.value * 150f / 1080f).dp
-        val titleSize = (maxWidth.value * 78f / 1080f).sp
-        val titleLineHeight = (maxWidth.value * POSTER_TITLE_LINE_HEIGHT / 1080f).sp
-        val subtitleSize = (maxWidth.value * 32f / 1080f).sp
-        val subtitleLineHeight = (maxWidth.value * POSTER_SUBTITLE_LINE_HEIGHT / 1080f).sp
-        val subtitleTopPadding = (maxWidth.value * 22f / 1080f).dp
         Canvas(
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -200,41 +183,15 @@ fun PosterPreview(
                     alpha = animatedImage.alpha,
                 )
             }
-        }
-        CompositionLocalProvider(LocalDensity provides posterDensity) {
-            Column(
-                modifier = Modifier.padding(
-                    start = horizontalPadding,
-                    top = topPadding,
-                    end = horizontalPadding,
-                ),
-            ) {
-                if (document.title.isNotBlank()) {
-                    Text(
-                        text = document.title,
-                        color = Color(palette.headlineColor),
-                        fontSize = titleSize,
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = titleLineHeight,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (document.subtitle.isNotBlank()) {
-                    Text(
-                        text = document.subtitle,
-                        modifier = Modifier.padding(
-                            top = if (document.title.isNotBlank()) subtitleTopPadding else 0.dp,
-                        ),
-                        color = Color(palette.supportingCopyColor),
-                        fontSize = subtitleSize,
-                        fontFamily = FontFamily.SansSerif,
-                        lineHeight = subtitleLineHeight,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+            // The copy block goes through the exporter's own function so preview and export
+            // cannot drift apart. See drawPosterCopy in PosterRenderer.kt.
+            drawIntoCanvas { canvas ->
+                drawPosterCopy(
+                    canvas = canvas.nativeCanvas,
+                    document = document,
+                    palette = palette,
+                    scale = size.width / POSTER_REFERENCE_WIDTH,
+                )
             }
         }
     }

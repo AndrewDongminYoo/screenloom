@@ -35,6 +35,15 @@ data class PosterPalette(
 internal const val POSTER_SHADOW_LAYER_COUNT = 12
 internal const val POSTER_TITLE_LINE_HEIGHT = 86f
 internal const val POSTER_SUBTITLE_LINE_HEIGHT = 42f
+
+// The copy block is placed from explicit baselines, not from font-metric-driven line boxes.
+// Hangul reaches the block through a fallback face whose metrics differ from the Latin serif's,
+// and the two renderers disagreed by 18-29px at 1080x1920 while agreeing within 3px on Latin.
+internal const val POSTER_REFERENCE_WIDTH = 1080f
+internal const val POSTER_COPY_LEFT = 90f
+internal const val POSTER_TITLE_FIRST_BASELINE = 222f
+internal const val POSTER_SUBTITLE_FIRST_BASELINE = 180f
+internal const val POSTER_COPY_BASELINE_GAP = 70f
 internal const val POSTER_SUN_ALPHA = 176
 internal const val POSTER_RIBBON_ALPHA = 72
 internal const val POSTER_COPY_ZONE_ALPHA = 235
@@ -182,7 +191,7 @@ class PosterRenderer {
         drawBackground(canvas, palette, width, height, scale)
         drawCopyZone(canvas, document, palette, scale)
         drawScreenshots(canvas, document, images, palette, width, height, scale)
-        drawCopy(canvas, document, palette, width, scale)
+        drawPosterCopy(canvas, document, palette, scale)
         return output
     }
 
@@ -262,64 +271,6 @@ class PosterRenderer {
             PosterCopyZone.cornerRadius * scale,
             paint,
         )
-    }
-
-    private fun drawCopy(
-        canvas: Canvas,
-        document: EditorDocument,
-        palette: PosterPalette,
-        width: Int,
-        scale: Float,
-    ) {
-        if (document.title.isBlank() && document.subtitle.isBlank()) return
-        var nextY = 150f * scale
-        if (document.title.isNotBlank()) {
-            val title = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = palette.headlineColor
-                textSize = 78f * scale
-                typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
-            }
-            val layout = StaticLayout.Builder.obtain(
-                document.title,
-                0,
-                document.title.length,
-                title,
-                (width - 180f * scale).roundToInt(),
-            ).setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setIncludePad(false)
-                .setLineSpacing(POSTER_TITLE_LINE_HEIGHT * scale, 0f)
-                .setMaxLines(2)
-                .setEllipsize(TextUtils.TruncateAt.END)
-                .build()
-            canvas.save()
-            canvas.translate(90f * scale, nextY)
-            layout.draw(canvas)
-            canvas.restore()
-            nextY += layout.height + 22f * scale
-        }
-        if (document.subtitle.isNotBlank()) {
-            val subtitle = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = palette.supportingCopyColor
-                textSize = 32f * scale
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-            }
-            val layout = StaticLayout.Builder.obtain(
-                document.subtitle,
-                0,
-                document.subtitle.length,
-                subtitle,
-                (width - 180f * scale).roundToInt(),
-            ).setAlignment(Layout.Alignment.ALIGN_NORMAL)
-                .setIncludePad(false)
-                .setLineSpacing(POSTER_SUBTITLE_LINE_HEIGHT * scale, 0f)
-                .setMaxLines(2)
-                .setEllipsize(TextUtils.TruncateAt.END)
-                .build()
-            canvas.save()
-            canvas.translate(90f * scale, nextY)
-            layout.draw(canvas)
-            canvas.restore()
-        }
     }
 
     private fun drawScreenshots(
@@ -419,4 +370,74 @@ class PosterRenderer {
     private companion object {
         val imagePaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     }
+}
+
+/**
+ * Draws the poster copy for both renderers. Every line lands on a baseline computed from the
+ * 1080-wide reference, so a fallback face's own ascent and descent cannot move the block.
+ * StaticLayout still performs line breaking and ellipsis; only its vertical placement is overridden.
+ */
+internal fun drawPosterCopy(
+    canvas: Canvas,
+    document: EditorDocument,
+    palette: PosterPalette,
+    scale: Float,
+) {
+    if (document.title.isBlank() && document.subtitle.isBlank()) return
+    canvas.save()
+    // Everything below is computed in 1080-wide reference units and only then scaled, so the
+    // preview and the export run identical layout arithmetic instead of quantising line advances
+    // to whole pixels at two different sizes.
+    canvas.scale(scale, scale)
+    val lineWidth = (POSTER_REFERENCE_WIDTH - 2f * POSTER_COPY_LEFT).roundToInt()
+    var baseline = if (document.title.isNotBlank()) {
+        POSTER_TITLE_FIRST_BASELINE
+    } else {
+        POSTER_SUBTITLE_FIRST_BASELINE
+    }
+    if (document.title.isNotBlank()) {
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = palette.headlineColor
+            textSize = 78f
+            typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+        }
+        val layout = copyLayout(document.title, paint, lineWidth, POSTER_TITLE_LINE_HEIGHT)
+        drawAtExplicitBaseline(canvas, layout, POSTER_COPY_LEFT, baseline)
+        baseline += (layout.lineCount - 1) * POSTER_TITLE_LINE_HEIGHT + POSTER_COPY_BASELINE_GAP
+    }
+    if (document.subtitle.isNotBlank()) {
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = palette.supportingCopyColor
+            textSize = 32f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+        }
+        val layout = copyLayout(document.subtitle, paint, lineWidth, POSTER_SUBTITLE_LINE_HEIGHT)
+        drawAtExplicitBaseline(canvas, layout, POSTER_COPY_LEFT, baseline)
+    }
+    canvas.restore()
+}
+
+private fun copyLayout(text: String, paint: TextPaint, width: Int, lineHeight: Float): StaticLayout =
+    StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+        .setIncludePad(false)
+        .setLineSpacing(lineHeight, 0f)
+        .setMaxLines(2)
+        .setEllipsize(TextUtils.TruncateAt.END)
+        .build()
+
+/**
+ * Pins line 0 onto [firstBaseline]. With a line-spacing multiplier of zero every later line
+ * advances by exactly the reference line height, so the whole block becomes font-independent.
+ */
+private fun drawAtExplicitBaseline(
+    canvas: Canvas,
+    layout: StaticLayout,
+    left: Float,
+    firstBaseline: Float,
+) {
+    canvas.save()
+    canvas.translate(left, firstBaseline - layout.getLineBaseline(0))
+    layout.draw(canvas)
+    canvas.restore()
 }
