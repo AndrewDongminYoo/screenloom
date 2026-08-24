@@ -1,11 +1,17 @@
 package kr.donminzzi.screenloom.editor
 
+import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -27,6 +33,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.ui.theme.ScreenloomTheme
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -57,13 +64,41 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Choose screenshots")
+        compose.onNodeWithText(string(R.string.choose_screenshots))
             .assertIsDisplayed()
             .assertHasClickAction()
             .performClick()
-        val previewDescription = compose.activity.getString(R.string.poster_preview_description)
+        val previewDescription = previewDescription(compose.activity)
         compose.onNodeWithContentDescription(previewDescription).assertIsDisplayed()
         compose.runOnIdle { assertEquals(1, chooseRequests) }
+    }
+
+    @Test
+    fun koreanLocaleRendersTranslatedEmptyStateAndDynamicPreviewDescription() {
+        val configuration = Configuration(compose.activity.resources.configuration).apply {
+            setLocale(Locale.forLanguageTag("ko-KR"))
+        }
+        val koreanContext = compose.activity.createConfigurationContext(configuration)
+
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalContext provides koreanContext,
+                LocalConfiguration provides configuration,
+            ) {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = EditorUiState(),
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithText(koreanContext.getString(R.string.choose_screenshots)).assertIsDisplayed()
+        compose.onNodeWithContentDescription(previewDescription(koreanContext)).assertIsDisplayed()
     }
 
     @Test
@@ -80,15 +115,15 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Split")
+        compose.onNodeWithText(string(R.string.layout_split))
             .assertIsNotEnabled()
             .assert(
                 SemanticsMatcher.expectValue(
                     SemanticsProperties.StateDescription,
-                    "Add a second screenshot to use Split",
+                    string(R.string.split_unavailable),
                 ),
             )
-        compose.onNodeWithText("Export PNG").assertIsEnabled()
+        compose.onNodeWithText(string(R.string.export_png)).assertIsEnabled()
     }
 
     @Test
@@ -106,7 +141,7 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Copy").performClick()
+        compose.onNodeWithText(string(R.string.tab_copy)).performClick()
         compose.onNodeWithTag("title-field").performTextInput("Ship something beautiful")
 
         compose.runOnIdle {
@@ -128,9 +163,9 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Device frame").assertIsDisplayed()
-        compose.onNodeWithText("Style").performClick()
-        compose.onNodeWithText("Device frame").assertDoesNotExist()
+        compose.onNodeWithText(string(R.string.device_frame)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.tab_style)).performClick()
+        compose.onNodeWithText(string(R.string.device_frame)).assertDoesNotExist()
     }
 
     @Test
@@ -152,7 +187,7 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Copy").performClick()
+        compose.onNodeWithText(string(R.string.tab_copy)).performClick()
         val characterCounter = compose.activity.getString(R.string.character_counter, 60, 60)
         compose.onNodeWithText(characterCounter).assertIsDisplayed()
     }
@@ -189,9 +224,9 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Layout").assertIsNotEnabled()
-        compose.onNodeWithText("Replace").assertIsNotEnabled()
-        compose.onNodeWithText("Reset").assertIsNotEnabled()
+        compose.onNodeWithText(string(R.string.tab_layout)).assertIsNotEnabled()
+        compose.onNodeWithText(string(R.string.replace)).assertIsNotEnabled()
+        compose.onNodeWithText(string(R.string.reset)).assertIsNotEnabled()
     }
 
     @Test
@@ -211,11 +246,11 @@ class EditorScreenTest {
                 }
             }
 
-            compose.onNodeWithText("Layout").assertSelected()
-            compose.onNodeWithText("Focus").assertSelected()
-            compose.onNodeWithText("Style").performClick().assertSelected()
-            compose.onNodeWithText("Paper").assertSelected()
-            compose.onNodeWithText("Medium").assertSelected()
+            compose.onNodeWithText(string(R.string.tab_layout)).assertSelected()
+            compose.onNodeWithText(string(R.string.layout_focus)).assertSelected()
+            compose.onNodeWithText(string(R.string.tab_style)).performClick().assertSelected()
+            compose.onNodeWithText(string(R.string.palette_ink)).assertSelected()
+            compose.onNodeWithText(string(R.string.shadow_medium)).assertSelected()
         } finally {
             compose.runOnIdle { state = EditorUiState() }
             source.recycle()
@@ -239,12 +274,12 @@ class EditorScreenTest {
                     )
                 }
             }
-            compose.onNodeWithText("Style").performClick().assertSelected()
+            compose.onNodeWithText(string(R.string.tab_style)).performClick().assertSelected()
 
             restorationTester.emulateSavedInstanceStateRestore()
 
-            compose.onNodeWithText("Style").assertSelected()
-            compose.onNodeWithText("Paper").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithText(string(R.string.tab_style)).assertSelected()
+            compose.onNodeWithText(string(R.string.palette_ink)).performScrollTo().assertIsDisplayed()
         } finally {
             compose.runOnIdle { state = EditorUiState() }
             source.recycle()
@@ -276,10 +311,10 @@ class EditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("Style").performClick()
-        compose.onNodeWithText("Paper").assertIsDisplayed().assertSelected()
-        compose.onNodeWithText("Mint").performScrollTo().assertIsDisplayed().performClick()
-        compose.onNodeWithText("Iris").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText(string(R.string.tab_style)).performClick()
+        compose.onNodeWithText(string(R.string.palette_ink)).assertIsDisplayed().assertSelected()
+        compose.onNodeWithText(string(R.string.palette_moss)).performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithText(string(R.string.palette_violet)).performScrollTo().assertIsDisplayed().performClick()
 
         compose.runOnIdle {
             assertEquals(EditorAction.SetPalette(PaletteId.Moss), actions[actions.lastIndex - 1])
@@ -303,9 +338,9 @@ class EditorScreenTest {
                 }
             }
 
-            compose.onNodeWithText("01 FRAME / 1080 × 1920")
+            compose.onNodeWithText(string(R.string.one_frame_loaded))
                 .assertRenderedForegroundHasPerimeterContrast(0xFF18213D.toInt())
-            compose.onNodeWithText("COMPOSITION")
+            compose.onNodeWithText(string(R.string.layout_section_label))
                 .assertRenderedForegroundHasPerimeterContrast(0xFF18213D.toInt())
         } finally {
             state.images.single().bitmap.recycle()
@@ -314,6 +349,15 @@ class EditorScreenTest {
 
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertSelected() = assert(
         SemanticsMatcher.expectValue(SemanticsProperties.Selected, true),
+    )
+
+    private fun string(@StringRes resourceId: Int): String = compose.activity.getString(resourceId)
+
+    private fun previewDescription(context: Context): String = context.getString(
+        R.string.poster_preview_description,
+        context.getString(R.string.layout_stack),
+        context.resources.getQuantityString(R.plurals.poster_preview_screenshot_count, 2, 2),
+        context.getString(R.string.palette_ink),
     )
 
     private fun SemanticsNodeInteraction.assertRenderedForegroundHasPerimeterContrast(foreground: Int) {
