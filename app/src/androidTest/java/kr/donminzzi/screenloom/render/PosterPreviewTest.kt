@@ -51,20 +51,33 @@ class PosterPreviewTest {
     @Test
     fun previewExposesOnlyItsConciseDescription() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        compose.setContent {
-            PosterPreview(
-                document = EditorDocument(
-                    title = "Ship beautifully",
-                    subtitle = "Store-ready visuals in seconds.",
-                ),
-                images = emptyList(),
-            )
-        }
+        val sources = List(2) { Bitmap.createBitmap(20, 40, Bitmap.Config.ARGB_8888) }
+        try {
+            compose.setContent {
+                PosterPreview(
+                    document = EditorDocument(
+                        imageCount = 2,
+                        layout = LayoutMode.Split,
+                        title = "Ship beautifully",
+                        subtitle = "Store-ready visuals in seconds.",
+                        palette = PaletteId.Cobalt,
+                    ),
+                    images = sources.map(Bitmap::asImageBitmap),
+                )
+            }
 
-        val previewDescription = context.getString(R.string.poster_preview_description)
-        compose.onNodeWithContentDescription(previewDescription).assertIsDisplayed()
-        compose.onNodeWithText("Ship beautifully").assertDoesNotExist()
-        compose.onNodeWithText("Store-ready visuals in seconds.").assertDoesNotExist()
+            val previewDescription = context.getString(
+                R.string.poster_preview_description,
+                context.getString(R.string.layout_split),
+                context.resources.getQuantityString(R.plurals.poster_preview_screenshot_count, 2, 2),
+                context.getString(R.string.palette_cobalt),
+            )
+            compose.onNodeWithContentDescription(previewDescription).assertIsDisplayed()
+            compose.onNodeWithText("Ship beautifully").assertDoesNotExist()
+            compose.onNodeWithText("Store-ready visuals in seconds.").assertDoesNotExist()
+        } finally {
+            sources.forEach(Bitmap::recycle)
+        }
     }
 
     @Test

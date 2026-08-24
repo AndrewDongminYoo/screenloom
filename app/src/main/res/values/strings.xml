@@ -12,7 +12,11 @@
     <string name="choose_screenshots">Choose screenshots</string>
     <string name="importing">Importing…</string>
     <string name="privacy_note">Offline by design. Your screenshots never leave this device.</string>
-    <string name="poster_preview_description">Promotional poster preview</string>
+    <string name="poster_preview_description">%1$s layout promotional poster preview with %2$s in %3$s palette</string>
+    <plurals name="poster_preview_screenshot_count">
+        <item quantity="one">%d screenshot</item>
+        <item quantity="other">%d screenshots</item>
+    </plurals>
     <string name="tab_layout">Layout</string>
     <string name="tab_copy">Copy</string>
     <string name="tab_style">Style</string>

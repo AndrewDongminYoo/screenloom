@@ -7,7 +7,11 @@
     <string name="choose_screenshots">스크린샷 선택</string>
     <string name="importing">가져오는 중…</string>
     <string name="privacy_note">설계부터 오프라인입니다. 스크린샷은 이 기기를 벗어나지 않습니다.</string>
-    <string name="poster_preview_description">홍보 포스터 미리보기</string>
+    <string name="poster_preview_description">%1$s 레이아웃의 홍보 포스터 미리보기, %2$s, %3$s 팔레트</string>
+    <plurals name="poster_preview_screenshot_count">
+        <item quantity="one">스크린샷 %d장</item>
+        <item quantity="other">스크린샷 %d장</item>
+    </plurals>
     <string name="tab_layout">레이아웃</string>
     <string name="tab_copy">문구</string>
     <string name="tab_style">스타일</string>

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.IntSize
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.editor.EditorDocument
 import kr.donminzzi.screenloom.editor.LayoutMode
+import kr.donminzzi.screenloom.editor.PaletteId
 import kr.donminzzi.screenloom.editor.ShadowLevel
 import kotlin.math.roundToInt
 
@@ -75,7 +77,34 @@ fun PosterPreview(
     images: List<ImageBitmap>,
     modifier: Modifier = Modifier,
 ) {
-    val previewDescription = stringResource(R.string.poster_preview_description)
+    val layoutLabel = stringResource(
+        when (document.layout) {
+            LayoutMode.Focus -> R.string.layout_focus
+            LayoutMode.Stack -> R.string.layout_stack
+            LayoutMode.Split -> R.string.layout_split
+        },
+    )
+    val paletteLabel = stringResource(
+        when (document.palette) {
+            PaletteId.Ink -> R.string.palette_ink
+            PaletteId.Cobalt -> R.string.palette_cobalt
+            PaletteId.Coral -> R.string.palette_coral
+            PaletteId.Moss -> R.string.palette_moss
+            PaletteId.Violet -> R.string.palette_violet
+            PaletteId.Sunrise -> R.string.palette_sunrise
+        },
+    )
+    val screenshotCount = pluralStringResource(
+        R.plurals.poster_preview_screenshot_count,
+        images.size,
+        images.size,
+    )
+    val previewDescription = stringResource(
+        R.string.poster_preview_description,
+        layoutLabel,
+        screenshotCount,
+        paletteLabel,
+    )
     BoxWithConstraints(
         modifier = modifier
             .aspectRatio(9f / 16f)
