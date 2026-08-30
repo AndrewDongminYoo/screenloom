@@ -60,9 +60,9 @@ Instrumented tests protect Android image decoding, bitmap export, ViewModel coor
 
 ## Post-Export Reuse Verification, 2026-08-30
 
-The debug APK SHA-256 was `fcf7c6cbcffc1e16daabe0b9710160e8c3c6339d1752815506b3b0f629774894`.
+The debug APK SHA-256 was `1a9241467a0cd3c5cb53ac679c043f447b382624edef7a87a8f03a65b3d45f61`.
 The fresh JVM report contained 31 tests with zero failures, errors, or skips.
-The fresh connected report contained 64 tests with zero failures, errors, or skips on the API 34 `flutter_emulator` AVD.
+The fresh connected report contained 63 tests with zero failures, errors, or skips on the API 34 `flutter_emulator` AVD.
 `lintDebug` ran `verifyDebugManifestPermissions` and exited zero.
 `assembleDebug` exited zero.
 
@@ -70,10 +70,10 @@ The ADB-driven manual flow used two local test screenshots through the system Ph
 With one imported image, a Split tap left the preview on Focus.
 With two imported images, Split changed the preview description to two screenshots.
 The manual flow changed the palette to Coral and the shadow to Strong.
-The real Downloads export created `screenloom-poster.png` with 155,529 bytes.
+The real Downloads export created `screenloom-rebased.png` with 205,954 bytes.
 `file` reported `PNG image data, 1080 x 1920, 8-bit/color RGB, non-interlaced`.
 `sips` reported a pixel width of 1080 and a pixel height of 1920.
-The exported PNG SHA-256 was `dc29d050f24b794f6124dc4744aa3d6b87cd07b4ae3edc077c4d5acfc414c40c`.
+The exported PNG SHA-256 was `661e51b138e478e1656f89a2f8ca129d0b04c8afe69c0bae2a84d1f939d27dc7`.
 
 The system Sharesheet opened from `Share PNG`.
 Back cancellation returned to the same Split and Coral composition with both post-export actions present.
