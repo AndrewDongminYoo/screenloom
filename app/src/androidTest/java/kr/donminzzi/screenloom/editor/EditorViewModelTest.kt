@@ -138,6 +138,31 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun dispatchIsIgnoredWhileExporting() = runBlocking {
+        val output = Uri.parse("content://screenloom/output")
+        val exportRelease = CompletableDeferred<Unit>()
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+            writer = PosterWriter { _, _, _ ->
+                exportRelease.await()
+                ExportResult.Success
+            },
+        )
+        viewModel.import(listOf(Uri.parse("content://screenloom/first")))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+        viewModel.dispatch(EditorAction.SetTitle("Before export"))
+
+        viewModel.export(output)
+        viewModel.awaitState { it.isExporting }
+        viewModel.dispatch(EditorAction.SetTitle("Queued edit"))
+
+        assertEquals("Before export", viewModel.state.value.document.title)
+        exportRelease.complete(Unit)
+        val completedState = viewModel.awaitState { !it.isExporting && it.lastExportUri == output }
+        assertEquals("Before export", completedState.document.title)
+    }
+
+    @Test
     fun emptyExportPublishesResourceBackedGuidance() {
         val viewModel = editorViewModel(
             loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
@@ -266,6 +291,21 @@ class EditorViewModelTest {
         assertFalse(viewModel.state.value.canUndoReset)
         viewModel.undoReset()
         assertEquals(beforeReset, viewModel.state.value.document)
+    }
+
+    @Test
+    fun changedEditAfterResetInvalidatesUndo() {
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+        )
+        viewModel.dispatch(EditorAction.SetTitle("Before reset"))
+        viewModel.dispatch(EditorAction.Reset)
+        viewModel.dispatch(EditorAction.SetTitle("After reset"))
+
+        assertFalse(viewModel.state.value.canUndoReset)
+        viewModel.undoReset()
+
+        assertEquals("After reset", viewModel.state.value.document.title)
     }
 
     @Test

@@ -67,16 +67,16 @@ class EditorViewModel(
 
     fun dispatch(action: EditorAction) {
         val current = mutableState.value
+        if (current.isImporting || current.isExporting) return
+
         val document = EditorReducer.reduce(current.document, action)
         if (document == current.document) return
 
-        if (action == EditorAction.Reset) {
-            resetDocument = current.document
-        }
+        resetDocument = current.document.takeIf { action == EditorAction.Reset }
         mutableState.value = current.copy(
             document = document,
             lastExportUri = null,
-            canUndoReset = action == EditorAction.Reset || current.canUndoReset,
+            canUndoReset = action == EditorAction.Reset,
             message = R.string.reset_complete.takeIf { action == EditorAction.Reset } ?: current.message,
         )
         publishStyleChange(current.document, document)
