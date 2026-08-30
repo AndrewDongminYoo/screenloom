@@ -1,5 +1,9 @@
 package kr.donminzzi.screenloom
 
+import android.content.Context
+import android.content.ClipData
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -11,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import kr.donminzzi.screenloom.editor.EditorStylePreferences
 import kr.donminzzi.screenloom.editor.EditorViewModel
 import kr.donminzzi.screenloom.media.ImageDecoder
 import kr.donminzzi.screenloom.media.OutputStreamProvider
@@ -29,11 +34,19 @@ class MainActivity : ComponentActivity() {
             renderer = PosterRenderer(),
             outputStreamProvider = OutputStreamProvider(resolver::openOutputStream),
         )
+        val stylePreferences = EditorStylePreferences(
+            applicationContext.getSharedPreferences(EditorStylePreferences.Name, Context.MODE_PRIVATE),
+        )
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 check(modelClass.isAssignableFrom(EditorViewModel::class.java))
-                return EditorViewModel(imageLoader, posterWriter) as T
+                return EditorViewModel(
+                    imageLoader = imageLoader,
+                    posterWriter = posterWriter,
+                    initialStyle = stylePreferences.load(),
+                    onStyleChanged = stylePreferences::save,
+                ) as T
             }
         }
     }
@@ -63,7 +76,19 @@ class MainActivity : ComponentActivity() {
                     )
                 },
                 onCreateDocument = exportPicker::launch,
+                onSharePng = { uri ->
+                    startActivity(
+                        Intent.createChooser(createSharePngIntent(uri), getString(R.string.share_png)),
+                    )
+                },
             )
         }
     }
+}
+
+internal fun createSharePngIntent(uri: Uri): Intent = Intent(Intent.ACTION_SEND).apply {
+    type = "image/png"
+    putExtra(Intent.EXTRA_STREAM, uri)
+    clipData = ClipData.newRawUri("Screenloom PNG", uri)
+    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
 }

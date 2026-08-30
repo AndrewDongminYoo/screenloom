@@ -1,5 +1,6 @@
 package kr.donminzzi.screenloom
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -14,6 +15,7 @@ fun ScreenloomApp(
     viewModel: EditorViewModel,
     onChooseImages: () -> Unit,
     onCreateDocument: (String) -> Unit,
+    onSharePng: (Uri) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     ScreenloomTheme {
@@ -23,6 +25,9 @@ fun ScreenloomApp(
             onRequestExport = { title -> onCreateDocument(posterFileName(title)) },
             onAction = viewModel::dispatch,
             onMessageConsumed = viewModel::consumeMessage,
+            onSharePng = onSharePng,
+            onCreateAnother = viewModel::createAnother,
+            onUndoReset = viewModel::undoReset,
         )
     }
 }

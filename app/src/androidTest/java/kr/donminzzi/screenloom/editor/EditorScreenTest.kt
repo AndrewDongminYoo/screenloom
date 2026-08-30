@@ -230,6 +230,68 @@ class EditorScreenTest {
     }
 
     @Test
+    fun successfulExportOffersShareAndCreateAnotherActions() {
+        val output = Uri.parse("content://screenloom/output")
+        val state = oneImageState().copy(lastExportUri = output)
+        var sharedUri: Uri? = null
+        var createAnotherRequests = 0
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                        onSharePng = { sharedUri = it },
+                        onCreateAnother = { createAnotherRequests += 1 },
+                    )
+                }
+            }
+
+            compose.onNodeWithText(string(R.string.share_png)).performScrollTo().performClick()
+            compose.onNodeWithText(string(R.string.create_another)).performScrollTo().performClick()
+
+            compose.runOnIdle {
+                assertEquals(output, sharedUri)
+                assertEquals(1, createAnotherRequests)
+            }
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun resetSnackbarUndoCallsItsHandler() {
+        val state = oneImageState().copy(
+            message = R.string.reset_complete,
+            canUndoReset = true,
+        )
+        var undoRequests = 0
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                        onUndoReset = { undoRequests += 1 },
+                    )
+                }
+            }
+
+            compose.onNodeWithText(string(R.string.undo)).assertIsDisplayed().performClick()
+
+            compose.runOnIdle { assertEquals(1, undoRequests) }
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
+    }
+
+    @Test
     fun tabsAndCurrentChoicesExposeSelectedSemantics() {
         var state by mutableStateOf(oneImageState())
         val source = state.images.single().bitmap

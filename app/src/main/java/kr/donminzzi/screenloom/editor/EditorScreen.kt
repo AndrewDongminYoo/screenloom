@@ -6,6 +6,7 @@ import android.graphics.Color as AndroidColor
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Shader
+import android.net.Uri
 import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -71,13 +73,24 @@ fun EditorScreen(
     onRequestExport: (String) -> Unit,
     onAction: (EditorAction) -> Unit,
     onMessageConsumed: () -> Unit,
+    onSharePng: (Uri) -> Unit = {},
+    onCreateAnother: () -> Unit = {},
+    onUndoReset: () -> Unit = {},
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val message = state.message?.let { stringResource(it) }
-    LaunchedEffect(message) {
+    val undoLabel = stringResource(R.string.undo)
+    LaunchedEffect(message, state.canUndoReset) {
         message?.let {
-            snackbarHostState.showSnackbar(it)
-            onMessageConsumed()
+            val result = snackbarHostState.showSnackbar(
+                message = it,
+                actionLabel = undoLabel.takeIf { state.canUndoReset },
+            )
+            if (result == SnackbarResult.ActionPerformed && state.canUndoReset) {
+                onUndoReset()
+            } else {
+                onMessageConsumed()
+            }
         }
     }
     Scaffold(
@@ -102,6 +115,8 @@ fun EditorScreen(
                     onChooseImages = onChooseImages,
                     onRequestExport = onRequestExport,
                     onAction = onAction,
+                    onSharePng = onSharePng,
+                    onCreateAnother = onCreateAnother,
                 )
             }
         }
@@ -206,6 +221,8 @@ private fun EditorWorkspace(
     onChooseImages: () -> Unit,
     onRequestExport: (String) -> Unit,
     onAction: (EditorAction) -> Unit,
+    onSharePng: (Uri) -> Unit,
+    onCreateAnother: () -> Unit,
 ) {
     val editorEnabled = !state.isImporting && !state.isExporting
     // Without this the wrappers are rebuilt on every keystroke, so PosterPreview can never skip.
@@ -317,6 +334,34 @@ private fun EditorWorkspace(
                     text = stringResource(R.string.action_forward),
                     modifier = Modifier.clearAndSetSemantics { },
                 )
+            }
+        }
+        state.lastExportUri?.let { uri ->
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { onSharePng(uri) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 52.dp),
+                    enabled = editorEnabled,
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text(stringResource(R.string.share_png))
+                }
+                OutlinedButton(
+                    onClick = onCreateAnother,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 52.dp),
+                    enabled = editorEnabled,
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text(stringResource(R.string.create_another))
+                }
             }
         }
         Spacer(Modifier.height(20.dp))

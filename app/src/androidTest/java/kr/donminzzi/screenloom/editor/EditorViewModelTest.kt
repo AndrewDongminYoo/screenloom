@@ -88,7 +88,39 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun visualStyleChangesPublishOnlyVisualStyle() {
+        val savedStyles = mutableListOf<EditorStyle>()
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+            initialStyle = EditorStyle(
+                layout = LayoutMode.Stack,
+                palette = PaletteId.Cobalt,
+                frameEnabled = false,
+                shadow = ShadowLevel.Soft,
+            ),
+            onStyleChanged = savedStyles::add,
+        )
+
+        viewModel.dispatch(EditorAction.SetPalette(PaletteId.Violet))
+        viewModel.dispatch(EditorAction.SetTitle("Do not persist this"))
+        viewModel.dispatch(EditorAction.SetSubtitle("Or this"))
+
+        assertEquals(
+            listOf(
+                EditorStyle(
+                    layout = LayoutMode.Stack,
+                    palette = PaletteId.Violet,
+                    frameEnabled = false,
+                    shadow = ShadowLevel.Soft,
+                ),
+            ),
+            savedStyles,
+        )
+    }
+
+    @Test
     fun successfulExportPublishesConfirmationAndClearsBusyState() = runBlocking {
+        val output = Uri.parse("content://screenloom/output")
         val viewModel = editorViewModel(
             loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
             writer = PosterWriter { _, _, _ -> ExportResult.Success },
@@ -96,10 +128,13 @@ class EditorViewModelTest {
         viewModel.import(listOf(Uri.parse("content://screenloom/first")))
         viewModel.awaitState { !it.isImporting && it.images.size == 1 }
 
-        viewModel.export(Uri.parse("content://screenloom/output"))
+        viewModel.export(output)
         val state = viewModel.awaitState { !it.isExporting && it.message != null }
 
         assertEquals(R.string.export_success, state.message)
+        assertEquals(output, state.lastExportUri)
+        viewModel.dispatch(EditorAction.SetTitle("A changed composition"))
+        assertEquals(null, viewModel.state.value.lastExportUri)
     }
 
     @Test
@@ -126,6 +161,126 @@ class EditorViewModelTest {
         val state = viewModel.awaitState { !it.isExporting && it.message != null }
 
         assertEquals(R.string.import_failure, state.message)
+        assertEquals(null, state.lastExportUri)
+    }
+
+    @Test
+    fun replacementImportHidesThePreviousSuccessfulExportUri() = runBlocking {
+        val first = Uri.parse("content://screenloom/first")
+        val second = Uri.parse("content://screenloom/second")
+        val output = Uri.parse("content://screenloom/output")
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+        )
+        viewModel.import(listOf(first))
+        viewModel.awaitState { !it.isImporting && it.images.singleOrNull()?.uri == first }
+        viewModel.export(output)
+        viewModel.awaitState { !it.isExporting && it.lastExportUri == output }
+
+        viewModel.import(listOf(second))
+        val state = viewModel.awaitState { !it.isImporting && it.images.singleOrNull()?.uri == second }
+
+        assertEquals(null, state.lastExportUri)
+    }
+
+    @Test
+    fun newExportHidesTheEarlierOutputWhileWriting() = runBlocking {
+        val firstOutput = Uri.parse("content://screenloom/first-output")
+        val secondOutput = Uri.parse("content://screenloom/second-output")
+        val secondExportRelease = CompletableDeferred<Unit>()
+        var exportCount = 0
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+            writer = PosterWriter { _, _, _ ->
+                exportCount += 1
+                if (exportCount == 2) secondExportRelease.await()
+                ExportResult.Success
+            },
+        )
+        viewModel.import(listOf(Uri.parse("content://screenloom/first")))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+        viewModel.export(firstOutput)
+        viewModel.awaitState { !it.isExporting && it.lastExportUri == firstOutput }
+
+        viewModel.export(secondOutput)
+        val writingState = viewModel.awaitState { it.isExporting }
+
+        assertEquals(null, writingState.lastExportUri)
+        secondExportRelease.complete(Unit)
+        viewModel.awaitState { !it.isExporting && it.lastExportUri == secondOutput }
+        Unit
+    }
+
+    @Test
+    fun createAnotherRecyclesSourcesAndKeepsOnlyVisualStyle() = runBlocking {
+        val source = testBitmap()
+        val output = Uri.parse("content://screenloom/output")
+        val expectedStyle = EditorStyle(
+            layout = LayoutMode.Stack,
+            palette = PaletteId.Violet,
+            frameEnabled = false,
+            shadow = ShadowLevel.Strong,
+        )
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(source) },
+        )
+        viewModel.import(listOf(Uri.parse("content://screenloom/first")))
+        viewModel.awaitState { !it.isImporting && it.images.size == 1 }
+        viewModel.dispatch(EditorAction.SetLayout(expectedStyle.layout))
+        viewModel.dispatch(EditorAction.SetPalette(expectedStyle.palette))
+        viewModel.dispatch(EditorAction.SetFrameEnabled(expectedStyle.frameEnabled))
+        viewModel.dispatch(EditorAction.SetShadow(expectedStyle.shadow))
+        viewModel.dispatch(EditorAction.SetTitle("Do not keep this"))
+        viewModel.dispatch(EditorAction.SetSubtitle("Or this"))
+        viewModel.export(output)
+        viewModel.awaitState { !it.isExporting && it.lastExportUri == output }
+
+        viewModel.createAnother()
+        val state = viewModel.state.value
+
+        assertTrue(source.isRecycled)
+        assertEquals(expectedStyle, state.document.style())
+        assertEquals(0, state.document.imageCount)
+        assertEquals("", state.document.title)
+        assertEquals("", state.document.subtitle)
+        assertTrue(state.images.isEmpty())
+        assertEquals(null, state.lastExportUri)
+    }
+
+    @Test
+    fun undoResetRestoresThePreResetDocumentOnlyOnce() {
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+        )
+        viewModel.dispatch(EditorAction.SetTitle("Restore this"))
+        viewModel.dispatch(EditorAction.SetPalette(PaletteId.Coral))
+        val beforeReset = viewModel.state.value.document
+
+        viewModel.dispatch(EditorAction.Reset)
+        assertEquals(R.string.reset_complete, viewModel.state.value.message)
+        assertTrue(viewModel.state.value.canUndoReset)
+
+        viewModel.undoReset()
+
+        assertEquals(beforeReset, viewModel.state.value.document)
+        assertFalse(viewModel.state.value.canUndoReset)
+        viewModel.undoReset()
+        assertEquals(beforeReset, viewModel.state.value.document)
+    }
+
+    @Test
+    fun dismissingTheResetMessageDisablesUndo() {
+        val viewModel = editorViewModel(
+            loader = ImageLoader { _, _ -> Result.success(testBitmap()) },
+        )
+        viewModel.dispatch(EditorAction.SetTitle("Do not restore this"))
+        viewModel.dispatch(EditorAction.Reset)
+
+        viewModel.consumeMessage()
+        viewModel.undoReset()
+
+        assertEquals(EditorDocument(), viewModel.state.value.document)
+        assertFalse(viewModel.state.value.canUndoReset)
     }
 
     @Test
@@ -235,7 +390,9 @@ class EditorViewModelTest {
     private fun editorViewModel(
         loader: ImageLoader,
         writer: PosterWriter = PosterWriter { _, _, _ -> ExportResult.Success },
-    ): EditorViewModel = EditorViewModel(loader, writer)
+        initialStyle: EditorStyle = EditorStyle(),
+        onStyleChanged: (EditorStyle) -> Unit = {},
+    ): EditorViewModel = EditorViewModel(loader, writer, initialStyle, onStyleChanged)
 
     private fun testBitmap(): Bitmap = Bitmap.createBitmap(20, 40, Bitmap.Config.ARGB_8888)
 

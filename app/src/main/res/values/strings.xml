@@ -47,6 +47,10 @@
     <string name="reset">Reset</string>
     <string name="export_png">Export PNG</string>
     <string name="exporting">Exporting…</string>
+    <string name="share_png">Share PNG</string>
+    <string name="create_another">Create another</string>
+    <string name="reset_complete">Reset to defaults</string>
+    <string name="undo">Undo</string>
     <string name="action_forward" translatable="false">→</string>
     <string name="import_failure">Unable to read that image</string>
     <string name="empty_export">Choose a screenshot first</string>
