@@ -25,6 +25,13 @@ enum class ShadowLevel {
     Strong,
 }
 
+data class EditorStyle(
+    val layout: LayoutMode = LayoutMode.Focus,
+    val palette: PaletteId = PaletteId.Ink,
+    val frameEnabled: Boolean = true,
+    val shadow: ShadowLevel = ShadowLevel.Medium,
+)
+
 data class EditorDocument(
     val imageCount: Int = 0,
     val layout: LayoutMode = LayoutMode.Focus,
@@ -38,6 +45,20 @@ data class EditorDocument(
         get() = imageCount >= 2
 }
 
+fun EditorDocument.style(): EditorStyle = EditorStyle(
+    layout = layout,
+    palette = palette,
+    frameEnabled = frameEnabled,
+    shadow = shadow,
+)
+
+fun EditorStyle.toDocument(): EditorDocument = EditorDocument(
+    layout = layout,
+    palette = palette,
+    frameEnabled = frameEnabled,
+    shadow = shadow,
+)
+
 data class ImportedImage(
     val uri: Uri,
     val bitmap: Bitmap,
@@ -48,6 +69,8 @@ data class EditorUiState(
     val images: List<ImportedImage> = emptyList(),
     val isImporting: Boolean = false,
     val isExporting: Boolean = false,
+    val lastExportUri: Uri? = null,
+    val canUndoReset: Boolean = false,
     @get:StringRes val message: Int? = null,
 )
 

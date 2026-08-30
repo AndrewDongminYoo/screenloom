@@ -128,14 +128,18 @@ class EditorScreenTest {
 
     @Test
     fun copyFieldDispatchesTitleChanges() {
+        var state by mutableStateOf(oneImageState())
         val actions = mutableListOf<EditorAction>()
         compose.setContent {
             ScreenloomTheme {
                 EditorScreen(
-                    state = oneImageState(),
+                    state = state,
                     onChooseImages = {},
                     onRequestExport = {},
-                    onAction = actions::add,
+                    onAction = { action ->
+                        actions += action
+                        state = state.copy(document = EditorReducer.reduce(state.document, action))
+                    },
                     onMessageConsumed = {},
                 )
             }
@@ -227,6 +231,68 @@ class EditorScreenTest {
         compose.onNodeWithText(string(R.string.tab_layout)).assertIsNotEnabled()
         compose.onNodeWithText(string(R.string.replace)).assertIsNotEnabled()
         compose.onNodeWithText(string(R.string.reset)).assertIsNotEnabled()
+    }
+
+    @Test
+    fun successfulExportOffersShareAndCreateAnotherActions() {
+        val output = Uri.parse("content://screenloom/output")
+        val state = oneImageState().copy(lastExportUri = output)
+        var sharedUri: Uri? = null
+        var createAnotherRequests = 0
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                        onSharePng = { sharedUri = it },
+                        onCreateAnother = { createAnotherRequests += 1 },
+                    )
+                }
+            }
+
+            compose.onNodeWithText(string(R.string.share_png)).performScrollTo().performClick()
+            compose.onNodeWithText(string(R.string.create_another)).performScrollTo().performClick()
+
+            compose.runOnIdle {
+                assertEquals(output, sharedUri)
+                assertEquals(1, createAnotherRequests)
+            }
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
+    }
+
+    @Test
+    fun resetSnackbarUndoCallsItsHandler() {
+        val state = oneImageState().copy(
+            message = R.string.reset_complete,
+            canUndoReset = true,
+        )
+        var undoRequests = 0
+        try {
+            compose.setContent {
+                ScreenloomTheme {
+                    EditorScreen(
+                        state = state,
+                        onChooseImages = {},
+                        onRequestExport = {},
+                        onAction = {},
+                        onMessageConsumed = {},
+                        onUndoReset = { undoRequests += 1 },
+                    )
+                }
+            }
+
+            compose.onNodeWithText(string(R.string.undo)).assertIsDisplayed().performClick()
+
+            compose.runOnIdle { assertEquals(1, undoRequests) }
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
     }
 
     @Test
