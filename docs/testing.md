@@ -58,6 +58,35 @@ adb -s emulator-5556 shell cmd locale set-app-locales kr.donminzzi.screenloom --
 
 Instrumented tests protect Android image decoding, bitmap export, ViewModel coordination, and Compose semantics.
 
+## Post-Export Reuse Verification, 2026-08-30
+
+The debug APK SHA-256 was `fcf7c6cbcffc1e16daabe0b9710160e8c3c6339d1752815506b3b0f629774894`.
+The fresh JVM report contained 31 tests with zero failures, errors, or skips.
+The fresh connected report contained 64 tests with zero failures, errors, or skips on the API 34 `flutter_emulator` AVD.
+`lintDebug` ran `verifyDebugManifestPermissions` and exited zero.
+`assembleDebug` exited zero.
+
+The ADB-driven manual flow used two local test screenshots through the system Photo Picker.
+With one imported image, a Split tap left the preview on Focus.
+With two imported images, Split changed the preview description to two screenshots.
+The manual flow changed the palette to Coral and the shadow to Strong.
+The real Downloads export created `screenloom-poster.png` with 155,529 bytes.
+`file` reported `PNG image data, 1080 x 1920, 8-bit/color RGB, non-interlaced`.
+`sips` reported a pixel width of 1080 and a pixel height of 1920.
+The exported PNG SHA-256 was `dc29d050f24b794f6124dc4744aa3d6b87cd07b4ae3edc077c4d5acfc414c40c`.
+
+The system Sharesheet opened from `Share PNG`.
+Back cancellation returned to the same Split and Coral composition with both post-export actions present.
+`Create another` returned to the empty state.
+The inspected preference file contained only `layout`, `palette`, `frame_enabled`, and `shadow` with the selected style values.
+After a process restart, Screenloom displayed the empty state.
+After two images were selected again, the preview restored the Split and Coral style.
+Reset displayed the default Focus and Paper preview with an Undo action.
+Undo restored the Split and Coral preview.
+
+[PARTIAL] This pass verifies state and system surfaces with ADB and UIAutomator.
+It does not replace a human visual or assistive-technology review of the new post-export actions.
+
 ## Verified Baseline
 
 The automated gate was last run on 2026-08-24 against the headless API 34 `flutter_emulator` AVD at 1080 by 1920, on the `fix/product-readiness` branch.
