@@ -128,14 +128,18 @@ class EditorScreenTest {
 
     @Test
     fun copyFieldDispatchesTitleChanges() {
+        var state by mutableStateOf(oneImageState())
         val actions = mutableListOf<EditorAction>()
         compose.setContent {
             ScreenloomTheme {
                 EditorScreen(
-                    state = oneImageState(),
+                    state = state,
                     onChooseImages = {},
                     onRequestExport = {},
-                    onAction = actions::add,
+                    onAction = { action ->
+                        actions += action
+                        state = state.copy(document = EditorReducer.reduce(state.document, action))
+                    },
                     onMessageConsumed = {},
                 )
             }
