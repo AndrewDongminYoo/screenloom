@@ -18,9 +18,11 @@ The implementation plan is in [docs/plans/2026-08-12-screenloom-implementation.m
 ## Build
 
 Use JDK 17 and the local Android SDK.
+`local.properties` is gitignored, so a fresh clone must pass the SDK path in.
+See [docs/testing.md](docs/testing.md) for that path; do not restate it here.
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew assembleDebug
 ```
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
@@ -28,9 +30,9 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 ## Verification
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew lintDebug
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew testDebugUnitTest
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew lintDebug
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
 ```
 
 See [docs/testing.md](docs/testing.md) for the complete testing contract, including the last verified APK hash and the run that produced it.

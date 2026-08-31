@@ -3,7 +3,8 @@
 ## Environment
 
 - JDK 17.
-- Android SDK at `/Volumes/dongminyu/Android/sdk`.
+- Android SDK at `~/Library/Android/sdk`, the Android Studio default location on macOS.
+  Every command below writes that value into the `<android-sdk-path>` placeholder.
 - Compile and target SDK 36.
 - Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920, run headless (see below).
 
@@ -37,10 +38,10 @@ adb -s emulator-5556 shell content call --uri content://media/external/images/me
 Run each heavy Android command sequentially.
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew lintDebug
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew testDebugUnitTest
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew lintDebug
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew assembleDebug
 ```
 
 Unit tests protect editor normalization and deterministic layout geometry.
@@ -109,14 +110,14 @@ It produces no runtime permission prompt.
 Verify that exact allowlist after manifest merging:
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew verifyDebugManifestPermissions
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew verifyDebugManifestPermissions
 ```
 
 Use the following standalone merged-manifest inspection when diagnosing the verifier.
 Read `intermediates/merged_manifest/debug`, the directory `processDebugMainManifest` writes — the similarly named plural `merged_manifests` tree belongs to `processDebugManifest` and goes stale when only the main manifest task runs:
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
+ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew processDebugMainManifest
 merged_manifest=$(find app/build/intermediates/merged_manifest/debug -name AndroidManifest.xml -print -quit)
 test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
 rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
