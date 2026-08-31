@@ -3,9 +3,17 @@
 ## Environment
 
 - JDK 17.
-- Android SDK at `/Volumes/dongminyu/Android/sdk`.
+- Android SDK at `~/Library/Android/sdk`, the Android Studio default location on macOS.
 - Compile and target SDK 36.
 - Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920, run headless (see below).
+
+`local.properties` is gitignored, so a fresh clone must export the SDK path before running any live command in this document:
+
+```bash
+export ANDROID_SDK_ROOT=~/Library/Android/sdk
+```
+
+The dated QA sections quote the commands as they were run on those days, including the SDK path of the time, and are not affected by this.
 
 ## Emulator
 
@@ -17,7 +25,7 @@ $ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator \
   -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim \
   -no-snapshot-load -no-snapshot-save -memory 2048 -cores 2 -port 5556 &
 adb -s emulator-5556 wait-for-device
-ANDROID_SERIAL=emulator-5556 ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest
+ANDROID_SERIAL=emulator-5556 ./gradlew connectedDebugAndroidTest
 ```
 
 `-gpu swiftshader_indirect` is load-bearing, not decoration.
@@ -37,10 +45,10 @@ adb -s emulator-5556 shell content call --uri content://media/external/images/me
 Run each heavy Android command sequentially.
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew testDebugUnitTest
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew lintDebug
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew connectedDebugAndroidTest
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
+./gradlew testDebugUnitTest
+./gradlew lintDebug
+./gradlew connectedDebugAndroidTest
+./gradlew assembleDebug
 ```
 
 Unit tests protect editor normalization and deterministic layout geometry.
@@ -114,14 +122,14 @@ It produces no runtime permission prompt.
 Verify that exact allowlist after manifest merging:
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew verifyDebugManifestPermissions
+./gradlew verifyDebugManifestPermissions
 ```
 
 Use the following standalone merged-manifest inspection when diagnosing the verifier.
 Read `intermediates/merged_manifest/debug`, the directory `processDebugMainManifest` writes — the similarly named plural `merged_manifests` tree belongs to `processDebugManifest` and goes stale when only the main manifest task runs:
 
 ```bash
-ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew processDebugMainManifest
+./gradlew processDebugMainManifest
 merged_manifest=$(find app/build/intermediates/merged_manifest/debug -name AndroidManifest.xml -print -quit)
 test "$(rg -c '<uses-permission' "$merged_manifest")" = "1"
 rg -n 'uses-permission android:name="kr\.donminzzi\.screenloom\.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"' "$merged_manifest"
@@ -138,11 +146,13 @@ if rg -n 'uses-permission android:name="android\.' "$merged_manifest"; then exit
 6. Rotate the emulator and confirm the active composition survives while the process remains alive.
 7. Export a PNG, reopen it, and confirm it is an opaque 8-bit truecolor RGB image with dimensions of 1080 by 1920 pixels.
 
-Inspect the exported artifact itself rather than relying on successful bitmap decoding:
+Inspect the exported artifact itself rather than relying on successful bitmap decoding.
+Point `exported_png` at the file the export produced:
 
 ```bash
-file <exported-png>
-sips -g pixelWidth -g pixelHeight <exported-png>
+exported_png=~/Downloads/screenloom-poster.png
+file "$exported_png"
+sips -g pixelWidth -g pixelHeight "$exported_png"
 ```
 
 The `file` result must report `8-bit/color RGB`, not `RGBA`, and `sips` must report a pixel width of 1080 and a pixel height of 1920.

@@ -15,14 +15,15 @@ Owned elsewhere, do not restate here:
 
 JDK 17 and `minSdk` 26; toolchain versions live in `gradle/libs.versions.toml` and `gradle/wrapper/gradle-wrapper.properties`.
 
-`local.properties` is gitignored, so a fresh clone has no `sdk.dir` and **every Gradle invocation needs the SDK passed in**:
+`local.properties` is gitignored, so a fresh clone has no `sdk.dir` and **the SDK path must reach every Gradle invocation**:
 
 ```bash
-ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew <task>
+export ANDROID_SDK_ROOT=/path/to/android-sdk
+./gradlew assembleDebug
 ```
 
-The path is in `docs/testing.md`.
-Keep it in the invocation or the environment; never commit it into a tracked Gradle file.
+The real path is in `docs/testing.md`.
+Keep it in the environment; never commit it into a tracked Gradle file.
 
 Run Android tasks one at a time — this machine crashes under stacked emulator plus build load.
 
@@ -30,10 +31,10 @@ Run Android tasks one at a time — this machine crashes under stacked emulator 
 
 ```bash
 # One unit-test class (verified 2026-08-13, no emulator needed)
-ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew testDebugUnitTest --tests "kr.donminzzi.screenloom.editor.EditorReducerTest"
+./gradlew testDebugUnitTest --tests "kr.donminzzi.screenloom.editor.EditorReducerTest"
 
 # One instrumented class or method (AGP form; needs a booted emulator or device)
-ANDROID_SDK_ROOT=<android-sdk-path> ./gradlew connectedDebugAndroidTest \
+./gradlew connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=kr.donminzzi.screenloom.render.PosterRendererTest
 ```
 
