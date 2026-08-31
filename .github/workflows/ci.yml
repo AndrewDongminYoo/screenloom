@@ -6,6 +6,13 @@ on:
     branches:
       - main
 
+# One run per ref at a time. A superseded pull-request run is cancelled, but
+# pushes to main queue instead, so no merge commit is left unvalidated when two
+# merges land seconds apart.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
