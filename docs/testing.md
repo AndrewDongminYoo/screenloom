@@ -5,7 +5,7 @@
 - JDK 17.
 - Android SDK at `~/Library/Android/sdk`, the Android Studio default location on macOS.
 - Compile and target SDK 36.
-- Instrumented test AVD `flutter_emulator`, API 34, 1080 by 1920, run headless (see below).
+- Instrumented test AVD `Pixel_10`, Android 17 / API 37, 1080 by 2424, run headless (see below).
 
 `local.properties` is gitignored, so a fresh clone must export the SDK path before running any live command in this document:
 
@@ -17,11 +17,11 @@ The dated QA sections quote the commands as they were run on those days, includi
 
 ## Emulator
 
-Instrumented runs use the low-memory headless `flutter_emulator` AVD.
+Instrumented runs use the low-memory headless `Pixel_10` AVD.
 Booting a second instance of the same AVD is refused outright (`Running multiple emulators with the same AVD is an experimental feature`), and without `ANDROID_SERIAL` Gradle installs and runs on **every** attached device.
 
 ```bash
-$ANDROID_SDK_ROOT/emulator/emulator -avd flutter_emulator \
+$ANDROID_SDK_ROOT/emulator/emulator -avd Pixel_10 \
   -no-window -gpu swiftshader_indirect -no-audio -no-boot-anim \
   -no-snapshot-load -no-snapshot-save -memory 2048 -cores 2 -port 5556 &
 adb -s emulator-5556 wait-for-device
@@ -32,7 +32,7 @@ ANDROID_SERIAL=emulator-5556 ./gradlew connectedDebugAndroidTest
 Dropping it once left the instance stuck at `offline` for 16 minutes with a live qemu process; the same AVD booted in 30 seconds with the flag restored.
 `-no-snapshot-load` keeps a stale snapshot from being restored into that same state.
 
-`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only `flutter_emulator`.
+`ANDROID_SERIAL` is what scopes the run; it is verified working — the task output names only the AVD it was given.
 On a freshly booted AVD the system photo picker keeps its own index, so pushed images show as "No photos or videos" until the media provider is restarted:
 
 ```bash
@@ -97,16 +97,39 @@ It does not replace a human visual or assistive-technology review of the new pos
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-25 against the headless API 34 `flutter_emulator` AVD at 1080 by 1920, using `main` commit `42c9fd2` plus the maximum-font header fix documented below.
-The result contained 31 passing unit tests and 52 passing instrumented tests with zero failures, errors, or skips.
+The automated gate was last run on 2026-08-31 against the headless `Pixel_10` AVD, Android 17 / API 37, at 1080 by 2424, on `main` commit `63b65db` plus the espresso pin described below.
+The result contained 31 passing unit tests and 66 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
-The maximum-font regression reads the header metadata's real Compose `TextLayoutResult` and rejects width or height overflow at a 2.0 font scale.
 
-The debug APK SHA-256 for that run is `89d49d54b2e03d9b918628b8a57f6f4a0a038c9215f9d97974328969c7a3f1e0`.
+The debug APK SHA-256 for that run is `787a076aad568863885ea6632cb61e7e81b094cdda1e3677b1a4f222d033caa3`.
 
-The same 52-test connected suite was attempted on the Pixel 10 Android 17/API 37 AVD.
-Twenty-nine Compose and Espresso tests stopped in `Espresso.onIdle` because AndroidX Test reflected the removed `android.hardware.input.InputManager.getInstance()` method, so API 37 is not an automated baseline for this dependency set.
+### API 37 needed espresso pinned ahead of the Compose BOM
 
+The 2026-08-25 baseline recorded twenty-nine Compose and Espresso tests stopping in `Espresso.onIdle` on this same API 37 image, and set the platform aside as unusable "for this dependency set".
+The dependency set was the whole of it.
+The Compose BOM resolves `androidx.test.espresso:espresso-core` to 3.5.0 while every sibling `androidx.test` artifact is upgraded around it, `core` to 1.7.0 and `monitor` to 1.8.0, leaving espresso alone three years behind.
+
+Disassembling `androidx/test/espresso/base/InputManagerEventInjectionStrategy` from 3.5.0 shows what that costs:
+
+```log
+ldc           // String android.hardware.input.InputManager
+invokestatic  // Method java/lang/Class.forName
+ldc           // String getInstance
+invokevirtual // Method java/lang/Class.getDeclaredMethod
+invokevirtual // Method java/lang/reflect/Method.setAccessible
+```
+
+API 37 removed `InputManager#getInstance`, so the lookup throws and Espresso cannot inject events.
+3.7.0 routes the same lookup through `androidx.test.internal.platform.reflect.ReflectiveMethod`.
+`gradle/libs.versions.toml` pins it explicitly rather than through a resolution constraint, so the reason stays readable where the dependency is declared.
+
+[UNCERTAIN] The pin was not isolated by a control run.
+The mechanism is confirmed at the bytecode level, and `gradle/libs.versions.toml` carries no commit between the recorded failure and this run, but the instrumented sources changed over four commits in that window.
+Reverting the pin and re-running on API 37 is what would settle attribution.
+
+The API 34 `flutter_emulator` AVD behind every baseline before this one no longer exists on this machine, and `android-37.0` is the only installed system image.
+
+The 2026-08-25 baseline, for reference, was 31 unit and 52 instrumented tests against APK SHA-256 `89d49d54b2e03d9b918628b8a57f6f4a0a038c9215f9d97974328969c7a3f1e0`, on the API 34 `flutter_emulator` AVD.
 The earlier 2026-08-24 product-readiness baseline, for reference, was 31 unit and 49 instrumented tests against APK SHA-256 `e2f11d3c659e28fda1896716726dfde28e2ad01267e19b8ca6755493d7771f94`.
 The complete 49-test instrumented suite passed in separate English-default and `ko-KR` per-app locale runs.
 The 2026-08-13 automated baseline, for reference, was 28 unit and 42 instrumented tests against APK SHA-256 `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
