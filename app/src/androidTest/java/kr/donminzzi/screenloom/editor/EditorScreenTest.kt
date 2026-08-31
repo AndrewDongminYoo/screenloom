@@ -10,8 +10,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -30,6 +32,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kr.donminzzi.screenloom.R
 import kr.donminzzi.screenloom.ui.theme.ScreenloomTheme
@@ -413,9 +417,48 @@ class EditorScreenTest {
         }
     }
 
+    @Test
+    fun headerMetadataDoesNotClipAtMaximumFontScale() {
+        val state = oneImageState()
+        val deviceDensity = compose.activity.resources.displayMetrics.density
+        try {
+            compose.setContent {
+                CompositionLocalProvider(
+                    LocalDensity provides Density(deviceDensity, fontScale = 2f),
+                ) {
+                    ScreenloomTheme {
+                        EditorScreen(
+                            state = state,
+                            onChooseImages = {},
+                            onRequestExport = {},
+                            onAction = {},
+                            onMessageConsumed = {},
+                        )
+                    }
+                }
+            }
+
+            compose.onNodeWithText(string(R.string.one_frame_loaded)).assertTextDoesNotOverflow()
+        } finally {
+            state.images.single().bitmap.recycle()
+        }
+    }
+
     private fun androidx.compose.ui.test.SemanticsNodeInteraction.assertSelected() = assert(
         SemanticsMatcher.expectValue(SemanticsProperties.Selected, true),
     )
+
+    private fun SemanticsNodeInteraction.assertTextDoesNotOverflow() {
+        val node = fetchSemanticsNode("Expected a text node")
+        val textLayoutResults = mutableListOf<TextLayoutResult>()
+        node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(textLayoutResults)
+        assertEquals("Expected one text layout result", 1, textLayoutResults.size)
+        val textLayoutResult = textLayoutResults.single()
+        assertTrue(
+            "Header metadata was clipped at maximum font scale",
+            !textLayoutResult.didOverflowWidth && !textLayoutResult.didOverflowHeight,
+        )
+    }
 
     private fun string(@StringRes resourceId: Int): String = compose.activity.getString(resourceId)
 

@@ -25,6 +25,9 @@ ANDROID_SDK_ROOT=/Volumes/dongminyu/Android/sdk ./gradlew assembleDebug
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
+Release artifacts require the long-lived Play upload key through `SCREENLOOM_UPLOAD_STORE_FILE`, `SCREENLOOM_UPLOAD_STORE_PASSWORD`, `SCREENLOOM_UPLOAD_KEY_ALIAS`, and `SCREENLOOM_UPLOAD_KEY_PASSWORD`.
+Keep the keystore and credentials outside Git, then build the signed App Bundle with `./gradlew bundleRelease`.
+
 ## Verification
 
 ```bash

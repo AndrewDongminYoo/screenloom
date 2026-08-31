@@ -89,13 +89,18 @@ It does not replace a human visual or assistive-technology review of the new pos
 
 ## Verified Baseline
 
-The automated gate was last run on 2026-08-24 against the headless API 34 `flutter_emulator` AVD at 1080 by 1920, on the `fix/product-readiness` branch.
-The result contained 31 passing unit tests and 49 passing instrumented tests with zero failures, errors, or skips.
+The automated gate was last run on 2026-08-25 against the headless API 34 `flutter_emulator` AVD at 1080 by 1920, using `main` commit `42c9fd2` plus the maximum-font header fix documented below.
+The result contained 31 passing unit tests and 52 passing instrumented tests with zero failures, errors, or skips.
 `lintDebug` and `assembleDebug` both exited zero, and `lintDebug` carried `verifyDebugManifestPermissions` with it.
+The maximum-font regression reads the header metadata's real Compose `TextLayoutResult` and rejects width or height overflow at a 2.0 font scale.
+
+The debug APK SHA-256 for that run is `89d49d54b2e03d9b918628b8a57f6f4a0a038c9215f9d97974328969c7a3f1e0`.
+
+The same 52-test connected suite was attempted on the Pixel 10 Android 17/API 37 AVD.
+Twenty-nine Compose and Espresso tests stopped in `Espresso.onIdle` because AndroidX Test reflected the removed `android.hardware.input.InputManager.getInstance()` method, so API 37 is not an automated baseline for this dependency set.
+
+The earlier 2026-08-24 product-readiness baseline, for reference, was 31 unit and 49 instrumented tests against APK SHA-256 `e2f11d3c659e28fda1896716726dfde28e2ad01267e19b8ca6755493d7771f94`.
 The complete 49-test instrumented suite passed in separate English-default and `ko-KR` per-app locale runs.
-
-The debug APK SHA-256 for that run is `e2f11d3c659e28fda1896716726dfde28e2ad01267e19b8ca6755493d7771f94`.
-
 The 2026-08-13 automated baseline, for reference, was 28 unit and 42 instrumented tests against APK SHA-256 `f7c7dc7a1e73f25eb04c50463fc317023f92d814f7876bfa4d8d858826ea99b4`.
 The 2026-08-12 automated baseline, for reference, was 17 unit and 29 instrumented tests against APK SHA-256 `a9f99a93cb5c4fb25bf7ab98dca335bc4a745d20df0b9d359e89ae986db246da`.
 
@@ -143,6 +148,42 @@ sips -g pixelWidth -g pixelHeight <exported-png>
 The `file` result must report `8-bit/color RGB`, not `RGBA`, and `sips` must report a pixel width of 1080 and a pixel height of 1920.
 
 ## Manual Smoke Result
+
+### 2026-08-24, maximum-font accessibility follow-up
+
+The core workflow was driven at Android 14's 2.0 system font scale against debug APK SHA-256 `89d49d54b2e03d9b918628b8a57f6f4a0a038c9215f9d97974328969c7a3f1e0` on the API 34 `flutter_emulator` AVD.
+
+1. The clean empty state remained scrollable, and the sample preview, headline, body, import action, and privacy note were reachable without clipped text.
+2. The real Photo Picker exposed its privacy notice, two selectable images, and the `Add (2)` action at the maximum font scale.
+3. The first two-image editor run exposed a real defect: `02 FRAMES / 1080 × 1920` was constrained to one line and clipped after `02 FRAMES /`.
+4. After removing the one-line constraint, the full metadata wrapped onto two lines without overlapping the `SCREENLOOM` wordmark; a Compose regression test now rejects actual text-layout overflow at the maximum font scale.
+5. `Layout`, `Copy`, and `Style` remained reachable; `Split`, title and subtitle input, all six horizontally scrollable palettes, all three shadow options, `Replace`, `Reset`, and `Export PNG` were exercised.
+6. The real Create Document surface exposed its filename field and save action, and `max-font-title.png` was saved as a 366,589-byte, non-interlaced `8-bit/color RGB` PNG at exactly 1080 by 1920 pixels with SHA-256 `495abfd9f034d77664e518730334aa16d734fb68b437bc4832d0539d138acc26`.
+
+This result is partial for GitHub issue #9.
+The assistive-technology follow-up below supersedes the earlier package-availability limitation.
+
+### 2026-08-25, assistive-technology accessibility follow-up
+
+The accessibility workflow used the same debug APK on the Pixel 10 Android 17/API 37 AVD at 1080 by 2424.
+UIAutomator output was used only to drive and inspect system surfaces; it was not treated as a proxy for TalkBack speech, Switch Access focus, or Accessibility Scanner findings.
+
+1. TalkBack 17.0.0.889642762 produced real displayed speech and green focus highlights for `01 / POSTER`, the empty-state `Choose screenshots` button, Photo Picker's `Photos` tab and list, the complete two-image header `02 FRAMES / 1080 × 1920`, the selected state of editor tabs, the device-frame switch, and the preview summary.
+2. Keyboard focus opened the real Photo Picker while TalkBack was active, and the real Create Document surface announced `Downloads`; its `SAVE` button completed the write while TalkBack remained active.
+3. ADB cannot synthesize TalkBack's double-tap gesture.
+   Image selection and the Photo Picker `Done` action therefore required touch exploration or the service to be changed temporarily, and the editor's export trigger required the same accommodation before TalkBack was restored on Create Document.
+   This run does not establish a fully TalkBack-only import-to-export round trip.
+4. The saved `screenloom-poster.png` is a 210,425-byte, non-interlaced `8-bit/color RGB` PNG at exactly 1080 by 1920 pixels with SHA-256 `4f647e84649120918a7e901104b54a805be5a0d96fca7d29bb63d1251e5826d7`.
+5. The visible `PNG saved` snackbar was not repeated in TalkBack's displayed speech during this run.
+   Material 3's visible Snackbar applies a polite live region, and the contemporaneous TalkBack log reported a null node for a window-content change, so this observation did not justify an app change.
+6. Switch Access 1.17.0.877181440 was enabled through the Android accessibility UI and bound with its keyboard interceptor active.
+   ADB key events could be assigned but were not accepted as physical switches during scanning; emulator hardware events and host-synthesized keys also produced no scan highlight.
+   Switch focus order and actions therefore remain unverified rather than passed.
+7. Accessibility Scanner 2.5.1.896851528 was installed, enabled, and invoked twice through its accessibility shortcut on Screenloom's empty state.
+   The scanner retained `No scans yet` after both attempts, so no Scanner finding or clean result was available on this Android 17 image.
+
+GitHub issue #9 remains partial.
+The app-owned maximum-font clipping defect is fixed and guarded, and TalkBack output covers the core semantics, but a real Switch Access input and a successful Accessibility Scanner run are still required before closing the issue.
 
 ### 2026-08-24, product-readiness improvements
 

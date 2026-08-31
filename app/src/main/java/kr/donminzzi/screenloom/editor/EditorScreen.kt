@@ -387,7 +387,6 @@ private fun StudioHeader(sequence: String) {
                 fontSize = 9.sp,
                 letterSpacing = 0.8.sp,
             ),
-            maxLines = 1,
         )
     }
 }

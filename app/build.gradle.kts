@@ -3,6 +3,15 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val releaseSigningEnvironment = mapOf(
+    "SCREENLOOM_UPLOAD_STORE_FILE" to providers.environmentVariable("SCREENLOOM_UPLOAD_STORE_FILE"),
+    "SCREENLOOM_UPLOAD_STORE_PASSWORD" to providers.environmentVariable("SCREENLOOM_UPLOAD_STORE_PASSWORD"),
+    "SCREENLOOM_UPLOAD_KEY_ALIAS" to providers.environmentVariable("SCREENLOOM_UPLOAD_KEY_ALIAS"),
+    "SCREENLOOM_UPLOAD_KEY_PASSWORD" to providers.environmentVariable("SCREENLOOM_UPLOAD_KEY_PASSWORD"),
+)
+val missingReleaseSigningEnvironment = releaseSigningEnvironment.filterValues { !it.isPresent }.keys
+val releaseSigningConfigured = missingReleaseSigningEnvironment.isEmpty()
+
 android {
     namespace = "kr.donminzzi.screenloom"
     compileSdk = 36
@@ -25,6 +34,40 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseSigningEnvironment.getValue("SCREENLOOM_UPLOAD_STORE_FILE").get())
+                storePassword = releaseSigningEnvironment.getValue("SCREENLOOM_UPLOAD_STORE_PASSWORD").get()
+                keyAlias = releaseSigningEnvironment.getValue("SCREENLOOM_UPLOAD_KEY_ALIAS").get()
+                keyPassword = releaseSigningEnvironment.getValue("SCREENLOOM_UPLOAD_KEY_PASSWORD").get()
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+val verifyReleaseSigningConfiguration = tasks.register("verifyReleaseSigningConfiguration") {
+    group = "verification"
+    description = "Prevents unsigned Screenloom release artifacts."
+
+    doLast {
+        check(releaseSigningConfigured) {
+            "Release signing requires: ${missingReleaseSigningEnvironment.joinToString()}"
+        }
+    }
+}
+
+tasks.matching { it.name == "packageRelease" || it.name == "packageReleaseBundle" }.configureEach {
+    dependsOn(verifyReleaseSigningConfiguration)
 }
 
 dependencies {
