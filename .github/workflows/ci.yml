@@ -6,6 +6,18 @@ on:
     branches:
       - main
 
+# One run per ref at a time, keeping every run that queues behind it.
+# The default `queue: single` holds one pending run and cancels it when the next
+# arrives, so a third push would drop the second merge's validation entirely.
+# `queue: max` holds up to 100 instead.
+# It cannot be combined with cancel-in-progress, so a superseded pull-request run
+# is not cancelled and runs to completion. That trade is cheap here because
+# Actions minutes are free on a public repository; splitting the pull-request and
+# push triggers into separate workflows is what would buy the cancellation back.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  queue: max
+
 permissions:
   contents: read
 
