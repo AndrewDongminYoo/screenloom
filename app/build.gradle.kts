@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+configurations.matching { it.name == "releaseRuntimeClasspath" }.configureEach {
+    resolutionStrategy.activateDependencyLocking()
+}
+
 val releaseSigningEnvironment = mapOf(
     "SCREENLOOM_UPLOAD_STORE_FILE" to providers.environmentVariable("SCREENLOOM_UPLOAD_STORE_FILE"),
     "SCREENLOOM_UPLOAD_STORE_PASSWORD" to providers.environmentVariable("SCREENLOOM_UPLOAD_STORE_PASSWORD"),
