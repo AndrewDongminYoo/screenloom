@@ -20,6 +20,8 @@ runtimes:
 lint:
   disabled:
     - ktlint
+    - shellcheck
+    - shfmt
   enabled:
     - cspell@10.0.1
     - checkov@3.3.10
